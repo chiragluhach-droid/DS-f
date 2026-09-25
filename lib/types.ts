@@ -1,18 +1,34 @@
 export type Role = 'customer' | 'restaurant' | 'ngo' | 'admin';
 
-/** The three checkpoints a donation passes through. */
-export const DONATION_STATUSES = ['DONATED', 'HANDED_OVER', 'NGO_CONFIRMED'] as const;
+/** The checkpoints a donation passes through. */
+export const DONATION_STATUSES = [
+  'PENDING_PAYMENT',
+  'PAYMENT_SUCCESS',
+  'ASSIGNED_TO_BATCH',
+  'DISPATCHED',
+  'NGO_CONFIRMED',
+] as const;
 
 export type DonationStatus = (typeof DONATION_STATUSES)[number];
-export type AnyStatus = DonationStatus | 'CANCELLED' | 'REFUNDED';
+export type AnyStatus = DonationStatus | 'CANCELLED' | 'REFUNDED' | 'FAILED';
 
 export const STATUS_META: Record<AnyStatus, { label: string; short: string; blurb: string }> = {
-  DONATED: {
+  PENDING_PAYMENT: {
+    label: 'Payment pending',
+    short: 'Pending',
+    blurb: 'Waiting for payment confirmation.',
+  },
+  PAYMENT_SUCCESS: {
     label: 'Donation received',
     short: 'Received',
     blurb: 'Your half is paid and the restaurant has been notified.',
   },
-  HANDED_OVER: {
+  ASSIGNED_TO_BATCH: {
+    label: 'Assigned to Batch',
+    short: 'Batched',
+    blurb: 'Assigned to a batch to be cooked.',
+  },
+  DISPATCHED: {
     label: 'Handed over to NGO',
     short: 'Handed over',
     blurb: 'The kitchen cooked your dishes and handed them to the NGO.',
@@ -24,12 +40,15 @@ export const STATUS_META: Record<AnyStatus, { label: string; short: string; blur
   },
   CANCELLED: { label: 'Cancelled', short: 'Cancelled', blurb: 'This donation was cancelled.' },
   REFUNDED: { label: 'Refunded', short: 'Refunded', blurb: 'The amount was returned to you.' },
+  FAILED: { label: 'Failed', short: 'Failed', blurb: 'Payment failed.' },
 };
 
 /** Who owns each checkpoint — shown on the landing page and the timeline. */
 export const STATUS_ACTOR_LABEL: Record<DonationStatus, string> = {
-  DONATED: 'You',
-  HANDED_OVER: 'The kitchen',
+  PENDING_PAYMENT: 'You',
+  PAYMENT_SUCCESS: 'You',
+  ASSIGNED_TO_BATCH: 'System',
+  DISPATCHED: 'The kitchen',
   NGO_CONFIRMED: 'The NGO',
 };
 
@@ -108,6 +127,7 @@ export interface MenuItem {
   mrpPaise: number;
   /** Share of the MRP the guest pays; the restaurant covers the rest. */
   customerSharePercent: number;
+  batchTarget: number;
   image?: string;
   category: string;
   isVeg: boolean;
@@ -176,5 +196,22 @@ export interface DonationEvent {
   actorRole: Role | 'system';
   actorName: string;
   metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface Batch {
+  _id: string;
+  batchId: string;
+  restaurant: Restaurant | string;
+  ngo: Ngo | string;
+  menuItem: MenuItem | string;
+  targetQuantity: number;
+  collectedQuantity: number;
+  dispatchedQuantity?: number;
+  receivedQuantity?: number;
+  status: 'IN_PROGRESS' | 'READY_FOR_DELIVERY' | 'DISPATCHED' | 'NGO_RECEIVED' | 'RECONCILIATION_REQUIRED' | 'COMPLETED';
+  readyAt?: string;
+  dispatchedAt?: string;
+  receivedAt?: string;
   createdAt: string;
 }

@@ -10,7 +10,7 @@ import type { Restaurant } from '@/lib/types';
 
 const NAV = [
   { href: '/dashboard/restaurant', label: 'Overview', icon: LayoutGrid },
-  { href: '/dashboard/restaurant/donations', label: 'Donations', icon: ScrollText },
+  { href: '/dashboard/restaurant/batches', label: 'Batches', icon: ScrollText },
   { href: '/dashboard/restaurant/menu', label: 'Donation menu', icon: UtensilsCrossed },
   { href: '/dashboard/restaurant/qr', label: 'QR code', icon: QrCode },
   { href: '/dashboard/restaurant/profile', label: 'Profile', icon: Store },

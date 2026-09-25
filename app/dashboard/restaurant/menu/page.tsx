@@ -14,6 +14,7 @@ const BLANK = {
   description: '',
   mrpRupees: '',
   customerSharePercent: '50',
+  batchTarget: '40',
   image: '',
   category: 'Dosa',
   servingSize: '',
@@ -29,6 +30,7 @@ const toDraft = (item: MenuItem): Draft => ({
   description: item.description ?? '',
   mrpRupees: String(item.mrpPaise / 100),
   customerSharePercent: String(item.customerSharePercent),
+  batchTarget: String(item.batchTarget || 40),
   image: item.image ?? '',
   category: item.category,
   servingSize: item.servingSize ?? '',
@@ -78,6 +80,7 @@ export default function MenuPage() {
       description: draft.description.trim() || undefined,
       mrpPaise: Math.round(Number(draft.mrpRupees) * 100),
       customerSharePercent: Number(draft.customerSharePercent) || 50,
+      batchTarget: Number(draft.batchTarget) || 40,
       image: draft.image.trim(),
       category: draft.category.trim() || 'Dosa',
       servingSize: draft.servingSize.trim() || undefined,
@@ -315,6 +318,20 @@ export default function MenuPage() {
                     onChange={(e) => setDraft({ ...draft, customerSharePercent: e.target.value })}
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="label-lux" htmlFor="m-target">Batch target (portions)</label>
+                <input
+                  id="m-target"
+                  type="number"
+                  min="1"
+                  required
+                  className="field"
+                  value={draft.batchTarget}
+                  onChange={(e) => setDraft({ ...draft, batchTarget: e.target.value })}
+                  placeholder="40"
+                />
               </div>
 
               {/* the split, previewed live as they type */}

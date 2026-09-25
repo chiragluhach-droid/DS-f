@@ -24,7 +24,8 @@ export function Timeline({
 
   return (
     <ol className="relative">
-      {DONATION_STATUSES.map((step, i) => {
+      {DONATION_STATUSES.filter(s => s !== 'PENDING_PAYMENT').map((step, idx, arr) => {
+        const i = DONATION_STATUSES.indexOf(step);
         const event = eventByStatus.get(step);
         const done = i <= currentIdx && currentIdx >= 0;
         const active = i === currentIdx;

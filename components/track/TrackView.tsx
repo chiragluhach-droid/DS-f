@@ -142,6 +142,19 @@ export function TrackView({
                   />
                 )}
               </button>
+
+              {/* @ts-ignore - populated batch */}
+              {donation.items[0]?.batch?.batchId && (
+                <div className="flex items-center gap-2.5 rounded-full border border-line bg-surface px-4 py-2.5">
+                  <span className="text-[10.5px] uppercase tracking-[0.12em] text-ink-mute">
+                    Batch
+                  </span>
+                  <span className="numeral text-[15px] tracking-[0.02em] text-ink">
+                    {/* @ts-ignore - populated batch */}
+                    {donation.items[0].batch.batchId}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </section>

@@ -16,6 +16,12 @@ interface PageData {
   restaurant: Restaurant;
   items: MenuItem[];
   partners: Ngo[];
+  activeBatches: {
+    batchId: string;
+    menuItem: string;
+    targetQuantity: number;
+    collectedQuantity: number;
+  }[];
   recentDonations: RecentDonation[];
 }
 
@@ -44,6 +50,7 @@ export default async function RestaurantPage({ params }: { params: Promise<{ slu
       restaurant={data.restaurant}
       items={data.items}
       partners={data.partners ?? []}
+      activeBatches={data.activeBatches ?? []}
       recentDonations={data.recentDonations ?? []}
     />
   );

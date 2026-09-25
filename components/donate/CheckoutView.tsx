@@ -118,62 +118,20 @@ export function CheckoutView({ restaurant, items, ngo }: Props) {
       const donationId = created.donation.donationId;
       const order = await post<OrderResponse>('/payments/order', { donationId });
 
-      if (order.mode === 'mock') {
-        // No gateway keys configured — the backend still verifies and records
-        // the payment through the same code path.
-        setStage('paying');
-        await new Promise((r) => setTimeout(r, 900));
-        setStage('verifying');
-        await post('/payments/verify', {
-          donationId,
-          razorpayOrderId: order.orderId,
-          razorpayPaymentId: `pay_mock_${Date.now()}`,
-          razorpaySignature: 'mock_signature',
-        });
-        finish(donationId);
-        return;
-      }
-
-      const ready = await loadRazorpay();
-      if (!ready || !window.Razorpay) {
-        throw new Error('Could not reach the payment gateway. Check your connection.');
-      }
-
+      // Bypass Razorpay entirely for now per user request
       setStage('paying');
-      const rzp = new window.Razorpay({
-        key: order.keyId!,
-        amount: order.amountPaise,
-        currency: order.currency,
-        name: 'DaanSetu',
-        description: `${totals.portions} portions from ${restaurant.name}`,
-        order_id: order.orderId,
-        prefill: { name: form.name, contact: form.phone },
-        theme: { color: '#0d4b38' },
-        handler: async (response) => {
-          try {
-            setStage('verifying');
-            await post('/payments/verify', {
-              donationId,
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-            });
-            finish(donationId);
-          } catch (err) {
-            push(err instanceof ApiError ? err.message : 'Payment verification failed.', 'error');
-            setSubmitting(false);
-            setStage('idle');
-          }
-        },
-        modal: {
-          ondismiss: () => {
-            push('Payment cancelled. Your selection is still here.', 'info');
-            setSubmitting(false);
-            setStage('idle');
-          },
-        },
+      await new Promise((r) => setTimeout(r, 900));
+      setStage('verifying');
+      await post('/payments/verify', {
+        donationId,
+        razorpayOrderId: order.orderId || `order_mock_${Date.now()}`,
+        razorpayPaymentId: `pay_mock_${Date.now()}`,
+        razorpaySignature: 'mock_signature',
       });
-      rzp.open();
+      finish(donationId);
+      return;
+
+
     } catch (err) {
       push(err instanceof Error ? err.message : 'Something went wrong.', 'error');
       setSubmitting(false);

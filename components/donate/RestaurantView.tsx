@@ -26,10 +26,16 @@ interface Props {
   restaurant: Restaurant;
   items: MenuItem[];
   partners: Ngo[];
+  activeBatches: {
+    batchId: string;
+    menuItem: string;
+    targetQuantity: number;
+    collectedQuantity: number;
+  }[];
   recentDonations: RecentDonation[];
 }
 
-export function RestaurantView({ restaurant, items, partners, recentDonations }: Props) {
+export function RestaurantView({ restaurant, items, partners, activeBatches, recentDonations }: Props) {
   const router = useRouter();
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [category, setCategory] = useState('All');
@@ -203,7 +209,7 @@ export function RestaurantView({ restaurant, items, partners, recentDonations }:
                       className="mt-px shrink-0 text-emerald"
                       strokeWidth={1.5}
                     />
-                    Handover daily at noon, counted and confirmed by {ngo.name}.
+                    Meals are dispatched in batches when fully funded, and verified by {ngo.name}.
                   </p>
 
                   {ngo.website && (
@@ -234,9 +240,37 @@ export function RestaurantView({ restaurant, items, partners, recentDonations }:
               <p className="eyebrow">The donation menu</p>
               <h2 className="display-md mt-4">Pick a dish to send out</h2>
               <p className="mt-3 text-[14.5px] leading-relaxed text-ink-soft">
-                Cooked tomorrow morning, driven to {ngo?.name ?? 'our NGO partner'} before noon.
+                Dispatched to {ngo?.name ?? 'our NGO partner'} once the current batch reaches its target.
               </p>
             </div>
+
+            {activeBatches.length > 0 && (
+              <div className="mt-8 flex flex-col gap-3 max-w-xl">
+                <p className="text-[12px] font-medium uppercase tracking-[0.08em] text-ink-mute">
+                  Active Batches Funding Now
+                </p>
+                {activeBatches.map(b => {
+                  const item = items.find(i => i._id === b.menuItem);
+                  if (!item) return null;
+                  const progress = Math.min(100, Math.round((b.collectedQuantity / b.targetQuantity) * 100));
+                  return (
+                    <div key={b.batchId} className="rounded-xl border border-line bg-surface p-4">
+                      <div className="flex justify-between items-center text-[13.5px] mb-2">
+                        <span className="font-medium">{item.name}</span>
+                        <span className="text-ink-mute text-[12px]">Batch <span className="font-mono text-ink-soft">{b.batchId}</span></span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-line-soft overflow-hidden">
+                        <div className="h-full bg-emerald transition-all duration-1000" style={{ width: `${progress}%` }} />
+                      </div>
+                      <div className="mt-2 flex justify-between text-[11.5px] text-ink-mute">
+                        <span>{b.collectedQuantity} funded</span>
+                        <span>{b.targetQuantity} target</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {categories.length > 2 && (
               <div className="no-scrollbar -mx-5 mt-8 flex gap-2 overflow-x-auto px-5 md:mx-0 md:px-0">

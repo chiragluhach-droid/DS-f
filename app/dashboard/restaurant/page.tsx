@@ -53,7 +53,7 @@ export default function RestaurantOverview() {
     value: d.portions,
   }));
 
-  const toHandOver = analytics.byStatus.DONATED ?? 0;
+  const toHandOver = analytics.byStatus.ASSIGNED_TO_BATCH ?? 0;
 
   return (
     <>

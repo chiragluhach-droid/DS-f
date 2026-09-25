@@ -50,7 +50,7 @@ export default function NgoOverview() {
     );
   }
 
-  const awaiting = data.donations.filter((d) => d.status === 'HANDED_OVER');
+  const awaiting = data.donations.filter((d) => d.status === 'DISPATCHED');
 
   return (
     <>

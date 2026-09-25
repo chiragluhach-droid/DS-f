@@ -10,7 +10,7 @@ import type { Ngo } from '@/lib/types';
 
 const NAV = [
   { href: '/dashboard/ngo', label: 'Overview', icon: LayoutGrid },
-  { href: '/dashboard/ngo/donations', label: 'Incoming food', icon: PackageCheck },
+  { href: '/dashboard/ngo/batches', label: 'Incoming food', icon: PackageCheck },
   { href: '/dashboard/ngo/partners', label: 'Partner kitchens', icon: Building2 },
 ];
 
