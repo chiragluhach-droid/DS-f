@@ -10,7 +10,7 @@ export const DONATION_STATUSES = [
 ] as const;
 
 export type DonationStatus = (typeof DONATION_STATUSES)[number];
-export type AnyStatus = DonationStatus | 'CANCELLED' | 'REFUNDED' | 'FAILED';
+export type AnyStatus = DonationStatus | BatchStatus | 'CANCELLED' | 'REFUNDED' | 'FAILED';
 
 export const STATUS_META: Record<AnyStatus, { label: string; short: string; blurb: string }> = {
   PENDING_PAYMENT: {
@@ -41,6 +41,11 @@ export const STATUS_META: Record<AnyStatus, { label: string; short: string; blur
   CANCELLED: { label: 'Cancelled', short: 'Cancelled', blurb: 'This donation was cancelled.' },
   REFUNDED: { label: 'Refunded', short: 'Refunded', blurb: 'The amount was returned to you.' },
   FAILED: { label: 'Failed', short: 'Failed', blurb: 'Payment failed.' },
+  IN_PROGRESS: { label: 'In Progress', short: 'Collecting', blurb: 'Collecting donations.' },
+  READY_FOR_DELIVERY: { label: 'Ready for delivery', short: 'Ready', blurb: 'Ready to be dispatched.' },
+  NGO_RECEIVED: { label: 'NGO Received', short: 'Received', blurb: 'NGO received the batch.' },
+  RECONCILIATION_REQUIRED: { label: 'Reconciliation', short: 'Flagged', blurb: 'Requires admin attention.' },
+  COMPLETED: { label: 'Completed', short: 'Completed', blurb: 'Batch delivered and closed.' },
 };
 
 /** Who owns each checkpoint — shown on the landing page and the timeline. */
@@ -200,19 +205,35 @@ export interface DonationEvent {
   createdAt: string;
 }
 
+export const BATCH_STATUSES = [
+  'IN_PROGRESS',
+  'READY_FOR_DELIVERY',
+  'DISPATCHED',
+  'NGO_RECEIVED',
+  'RECONCILIATION_REQUIRED',
+  'COMPLETED'
+] as const;
+
+export type BatchStatus = typeof BATCH_STATUSES[number];
+
 export interface Batch {
   _id: string;
   batchId: string;
   restaurant: Restaurant | string;
   ngo: Ngo | string;
   menuItem: MenuItem | string;
+  itemName: string;
   targetQuantity: number;
   collectedQuantity: number;
   dispatchedQuantity?: number;
   receivedQuantity?: number;
-  status: 'IN_PROGRESS' | 'READY_FOR_DELIVERY' | 'DISPATCHED' | 'NGO_RECEIVED' | 'RECONCILIATION_REQUIRED' | 'COMPLETED';
+  status: BatchStatus;
   readyAt?: string;
   dispatchedAt?: string;
   receivedAt?: string;
+  receiptNote?: string;
+  resolution?: {
+    note: string;
+  };
   createdAt: string;
 }

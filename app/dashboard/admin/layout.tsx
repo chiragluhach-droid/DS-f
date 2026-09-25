@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutGrid, Store, HeartHandshake, Users, ScrollText, FileClock } from 'lucide-react';
+import { LayoutGrid, Store, HeartHandshake, Users, ScrollText, FileClock, PackageCheck } from 'lucide-react';
 import { RequireRole } from '@/components/RequireRole';
 import { DashboardShell } from '@/components/dashboard/DashboardShell';
 import { useAuth } from '@/lib/auth-context';
@@ -10,6 +10,7 @@ const NAV = [
   { href: '/dashboard/admin/restaurants', label: 'Restaurants', icon: Store },
   { href: '/dashboard/admin/ngos', label: 'NGOs', icon: HeartHandshake },
   { href: '/dashboard/admin/donations', label: 'Donations', icon: ScrollText },
+  { href: '/dashboard/admin/batches', label: 'Batches', icon: PackageCheck },
   { href: '/dashboard/admin/users', label: 'Users', icon: Users },
   { href: '/dashboard/admin/audit', label: 'Audit log', icon: FileClock },
 ];

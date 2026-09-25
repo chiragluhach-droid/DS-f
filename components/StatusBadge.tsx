@@ -10,6 +10,11 @@ const TONE: Record<AnyStatus, string> = {
   CANCELLED: 'bg-danger-tint text-danger border-danger/25',
   REFUNDED: 'bg-danger-tint text-danger border-danger/25',
   FAILED: 'bg-danger-tint text-danger border-danger/25',
+  IN_PROGRESS: 'bg-paper-deep text-ink-soft border-line',
+  READY_FOR_DELIVERY: 'bg-blue-50 text-blue-600 border-blue-200',
+  NGO_RECEIVED: 'bg-emerald text-paper border-emerald',
+  RECONCILIATION_REQUIRED: 'bg-amber-tint text-amber border-amber/25',
+  COMPLETED: 'bg-emerald text-paper border-emerald',
 };
 
 export function StatusBadge({
