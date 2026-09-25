@@ -24,10 +24,11 @@ interface Props {
   quantity: number;
   onChange: (n: number) => void;
   restaurantName: string;
+  activeBatch?: { collectedQuantity: number; targetQuantity: number };
 }
 
 /** Large editorial card for the kitchen's signature dishes. */
-export function SignatureDishCard({ item, quantity, onChange, restaurantName }: Props) {
+export function SignatureDishCard({ item, quantity, onChange, restaurantName, activeBatch }: Props) {
   return (
     <article className="group overflow-hidden rounded-[20px] border border-line bg-surface transition-colors duration-500 hover:border-emerald/25">
       <div className="relative aspect-[16/10] overflow-hidden">
@@ -62,6 +63,21 @@ export function SignatureDishCard({ item, quantity, onChange, restaurantName }: 
           <p className="mt-3 text-[12px] text-ink-mute">{item.servingSize}</p>
         )}
 
+        {activeBatch && (
+          <div className="mt-4 space-y-1.5">
+            <div className="flex justify-between text-[11px] font-medium tracking-wide uppercase text-ink-mute">
+              <span>Current Batch</span>
+              <span>{activeBatch.collectedQuantity} / {activeBatch.targetQuantity} funded</span>
+            </div>
+            <div className="h-1 w-full overflow-hidden rounded-full bg-line/60">
+              <div
+                className="h-full rounded-full bg-emerald transition-all duration-1000"
+                style={{ width: `${Math.min(100, Math.round((activeBatch.collectedQuantity / activeBatch.targetQuantity) * 100))}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         <div className="mt-6 flex items-end justify-between gap-4 border-t border-line-soft pt-5">
           <PriceSplit
             mrpPaise={item.mrpPaise}
@@ -76,7 +92,7 @@ export function SignatureDishCard({ item, quantity, onChange, restaurantName }: 
 }
 
 /** Compact row for the rest of the menu. */
-export function CompactDishCard({ item, quantity, onChange, restaurantName }: Props) {
+export function CompactDishCard({ item, quantity, onChange, restaurantName, activeBatch }: Props) {
   return (
     <article className="group flex gap-4 rounded-[18px] border border-line bg-surface p-3.5 transition-colors duration-500 hover:border-emerald/25 sm:gap-5 sm:p-4">
       <div className="relative size-[92px] shrink-0 overflow-hidden rounded-[13px] sm:size-[110px]">
@@ -105,6 +121,21 @@ export function CompactDishCard({ item, quantity, onChange, restaurantName }: Pr
           <p className="mt-1 line-clamp-2 text-[12.5px] leading-relaxed text-ink-soft">
             {item.description}
           </p>
+        )}
+
+        {activeBatch && (
+          <div className="mt-2 space-y-1.5">
+            <div className="flex justify-between text-[10px] font-medium tracking-wide uppercase text-ink-mute">
+              <span>Batch Progress</span>
+              <span>{activeBatch.collectedQuantity} / {activeBatch.targetQuantity}</span>
+            </div>
+            <div className="h-1 w-3/4 max-w-[12rem] overflow-hidden rounded-full bg-line/60">
+              <div
+                className="h-full rounded-full bg-emerald transition-all duration-1000"
+                style={{ width: `${Math.min(100, Math.round((activeBatch.collectedQuantity / activeBatch.targetQuantity) * 100))}%` }}
+              />
+            </div>
+          </div>
         )}
 
         <div className="mt-auto flex items-end justify-between gap-3 pt-3">

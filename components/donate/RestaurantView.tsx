@@ -300,6 +300,7 @@ export function RestaurantView({ restaurant, items, partners, activeBatches, rec
                       quantity={quantities[item._id] ?? 0}
                       onChange={(n) => setQty(item._id, n)}
                       restaurantName={restaurant.name}
+                      activeBatch={activeBatches.find(b => b.menuItem === item._id)}
                     />
                   </Reveal>
                 ))}
@@ -315,6 +316,7 @@ export function RestaurantView({ restaurant, items, partners, activeBatches, rec
                       quantity={quantities[item._id] ?? 0}
                       onChange={(n) => setQty(item._id, n)}
                       restaurantName={restaurant.name}
+                      activeBatch={activeBatches.find(b => b.menuItem === item._id)}
                     />
                   </Reveal>
                 ))}

@@ -145,14 +145,30 @@ export function TrackView({
 
               {/* @ts-ignore - populated batch */}
               {donation.items[0]?.batch?.batchId && (
-                <div className="flex items-center gap-2.5 rounded-full border border-line bg-surface px-4 py-2.5">
-                  <span className="text-[10.5px] uppercase tracking-[0.12em] text-ink-mute">
-                    Batch
-                  </span>
-                  <span className="numeral text-[15px] tracking-[0.02em] text-ink">
-                    {/* @ts-ignore - populated batch */}
-                    {donation.items[0].batch.batchId}
-                  </span>
+                <div className="flex flex-col gap-2 rounded-2xl border border-line bg-surface px-5 py-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] font-medium uppercase tracking-[0.08em] text-ink-mute">
+                      Batch <span className="font-mono text-ink-soft">{(donation.items[0].batch as any).batchId}</span>
+                    </span>
+                    <span className="text-[12px] font-medium text-ink-mute">
+                      {(donation.items[0].batch as any).collectedQuantity} / {(donation.items[0].batch as any).targetQuantity} funded
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-line/60">
+                    <div
+                      className="h-full rounded-full bg-emerald transition-all duration-1000"
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          Math.round(
+                            ((donation.items[0].batch as any).collectedQuantity /
+                              (donation.items[0].batch as any).targetQuantity) *
+                              100,
+                          ),
+                        )}%`,
+                      }}
+                    />
+                  </div>
                 </div>
               )}
             </div>
