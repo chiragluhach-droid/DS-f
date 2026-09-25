@@ -245,8 +245,8 @@ export function RestaurantView({ restaurant, items, partners, activeBatches, rec
             </div>
 
             {activeBatches.length > 0 && (
-              <div className="mt-8 flex flex-col gap-3 max-w-xl">
-                <p className="text-[12px] font-medium uppercase tracking-[0.08em] text-ink-mute">
+              <div className="mt-8 flex flex-col gap-3.5 max-w-xl">
+                <p className="text-[11.5px] font-medium uppercase tracking-[0.1em] text-ink-mute">
                   Active Batches Funding Now
                 </p>
                 {activeBatches.map(b => {
@@ -254,17 +254,54 @@ export function RestaurantView({ restaurant, items, partners, activeBatches, rec
                   if (!item) return null;
                   const progress = Math.min(100, Math.round((b.collectedQuantity / b.targetQuantity) * 100));
                   return (
-                    <div key={b.batchId} className="rounded-xl border border-line bg-surface p-4">
-                      <div className="flex justify-between items-center text-[13.5px] mb-2">
-                        <span className="font-medium">{item.name}</span>
-                        <span className="text-ink-mute text-[12px]">Batch <span className="font-mono text-ink-soft">{b.batchId}</span></span>
+                    <div
+                      key={b.batchId}
+                      className="group relative flex flex-col gap-3 overflow-hidden rounded-[18px] border border-line/60 bg-gradient-to-b from-surface to-paper p-5 transition-all duration-300 hover:border-emerald/30 hover:shadow-[0_4px_20px_-4px_rgba(16,185,129,0.1)]"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3.5">
+                          <div className="relative size-12 shrink-0 overflow-hidden rounded-xl border border-line/40 bg-paper-deep">
+                            {item.image && (
+                              <Image src={item.image} alt={item.name} fill sizes="48px" className="object-cover" />
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="font-display text-[15px] font-medium leading-none text-ink group-hover:text-emerald transition-colors">
+                              {item.name}
+                            </h4>
+                            <p className="mt-1.5 flex items-center gap-1.5 text-[11.5px] text-ink-mute">
+                              Batch <span className="font-mono text-[11px] font-medium tracking-wide text-ink-soft bg-line-soft px-1.5 py-0.5 rounded">{b.batchId}</span>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="numeral text-[18px] font-semibold leading-none text-emerald">
+                            {progress}%
+                          </p>
+                          <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.12em] text-ink-faint">
+                            Funded
+                          </p>
+                        </div>
                       </div>
-                      <div className="h-2 w-full rounded-full bg-line-soft overflow-hidden">
-                        <div className="h-full bg-emerald transition-all duration-1000" style={{ width: `${progress}%` }} />
+
+                      <div className="relative mt-2">
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-line/50">
+                          <div
+                            className="h-full rounded-full bg-emerald transition-all duration-1000 ease-out"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="mt-2 flex justify-between text-[11.5px] text-ink-mute">
-                        <span>{b.collectedQuantity} funded</span>
-                        <span>{b.targetQuantity} target</span>
+
+                      <div className="flex items-center justify-between text-[12px] font-medium text-ink-mute">
+                        <span className="flex items-center gap-2">
+                          <span className="relative flex size-2 items-center justify-center">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald opacity-20"></span>
+                            <span className="relative inline-flex size-1.5 rounded-full bg-emerald"></span>
+                          </span>
+                          <span className="text-ink">{b.collectedQuantity}</span> funded
+                        </span>
+                        <span><span className="text-ink">{b.targetQuantity}</span> target</span>
                       </div>
                     </div>
                   );
