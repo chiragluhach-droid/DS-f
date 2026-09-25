@@ -143,15 +143,15 @@ export function TrackView({
                 )}
               </button>
 
-              {/* @ts-ignore - populated batch */}
+
               {donation.items[0]?.batch?.batchId && (
                 <div className="flex flex-col gap-2 rounded-2xl border border-line bg-surface px-5 py-4">
                   <div className="flex items-center justify-between">
                     <span className="text-[12px] font-medium uppercase tracking-[0.08em] text-ink-mute">
-                      Batch <span className="font-mono text-ink-soft">{(donation.items[0].batch as any).batchId}</span>
+                      Batch <span className="font-mono text-ink-soft">{donation.items[0].batch.batchId}</span>
                     </span>
                     <span className="text-[12px] font-medium text-ink-mute">
-                      {(donation.items[0].batch as any).collectedQuantity} / {(donation.items[0].batch as any).targetQuantity} funded
+                      {donation.items[0].batch.collectedQuantity} / {donation.items[0].batch.targetQuantity} funded
                     </span>
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-line/60">
@@ -161,8 +161,8 @@ export function TrackView({
                         width: `${Math.min(
                           100,
                           Math.round(
-                            ((donation.items[0].batch as any).collectedQuantity /
-                              (donation.items[0].batch as any).targetQuantity) *
+                            (donation.items[0].batch.collectedQuantity /
+                              donation.items[0].batch.targetQuantity) *
                               100,
                           ),
                         )}%`,

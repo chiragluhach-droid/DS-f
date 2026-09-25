@@ -155,6 +155,7 @@ export interface DonationItem {
   lineCustomerPaise: number;
   lineRestaurantPaise: number;
   lineFoodValuePaise: number;
+  batch?: Batch;
 }
 
 export interface Donation {
