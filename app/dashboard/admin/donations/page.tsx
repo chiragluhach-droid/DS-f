@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Loader2, ScrollText, ExternalLink } from 'lucide-react';
 import { get } from '@/lib/api';
 import { PageHeading, EmptyState } from '@/components/dashboard/DashboardShell';
+import { LoadError } from '@/components/dashboard/LoadError';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatInr, formatDate, cn } from '@/lib/utils';
 import { DONATION_STATUSES, STATUS_META, type Donation, type Restaurant, type Ngo } from '@/lib/types';
@@ -17,6 +18,7 @@ const FILTERS = [
 export default function AdminDonationsPage() {
   const [filter, setFilter] = useState('all');
   const [donations, setDonations] = useState<Donation[] | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   const load = useCallback(async () => {
     setDonations(null);
@@ -24,8 +26,9 @@ export default function AdminDonationsPage() {
     try {
       const data = await get<{ donations: Donation[] }>(`/admin/donations?${query}`);
       setDonations(data.donations);
-    } catch {
-      setDonations([]);
+      setError(null);
+    } catch (err) {
+      setError(err);
     }
   }, [filter]);
 
@@ -58,7 +61,9 @@ export default function AdminDonationsPage() {
         ))}
       </div>
 
-      {donations === null ? (
+      {error ? (
+        <LoadError error={error} onRetry={() => void load()} what="donations" />
+      ) : donations === null ? (
         <div className="flex min-h-[30dvh] items-center justify-center">
           <Loader2 className="size-5 animate-spin text-ink-mute" />
         </div>

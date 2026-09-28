@@ -5,12 +5,14 @@ import { Loader2, Check } from 'lucide-react';
 import { get, patch, ApiError } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { PageHeading } from '@/components/dashboard/DashboardShell';
+import { LoadError } from '@/components/dashboard/LoadError';
 import { cn } from '@/lib/utils';
 import type { Restaurant } from '@/lib/types';
 
 export default function ProfilePage() {
   const { push } = useToast();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [form, setForm] = useState({
     name: '',
     tagline: '',
@@ -38,7 +40,7 @@ export default function ProfilePage() {
         });
         setAccepting(r.isAcceptingDonations);
       })
-      .catch(() => setRestaurant(null));
+      .catch(setError);
   }, []);
 
   const save = async (e: React.FormEvent) => {
@@ -65,6 +67,15 @@ export default function ProfilePage() {
       setSaving(false);
     }
   };
+
+  if (error) {
+    return (
+      <>
+        <PageHeading eyebrow="Profile" title="Your kitchen" />
+        <LoadError error={error} what="your profile" />
+      </>
+    );
+  }
 
   if (!restaurant) {
     return (

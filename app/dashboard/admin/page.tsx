@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Loader2, ArrowRight } from 'lucide-react';
 import { get } from '@/lib/api';
 import { PageHeading, StatCard } from '@/components/dashboard/DashboardShell';
+import { LoadError } from '@/components/dashboard/LoadError';
 import { BarChart, type Point } from '@/components/dashboard/BarChart';
 import { formatInr, formatNumber, formatDate } from '@/lib/utils';
 import { DONATION_STATUSES, STATUS_META } from '@/lib/types';
@@ -31,12 +32,23 @@ interface Overview {
 
 export default function AdminOverview() {
   const [data, setData] = useState<Overview | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
-  useEffect(() => {
-    void get<Overview>('/admin/overview')
-      .then(setData)
-      .catch(() => setData(null));
+  const load = useCallback(() => {
+    setError(null);
+    void get<Overview>('/admin/overview').then(setData).catch(setError);
   }, []);
+
+  useEffect(load, [load]);
+
+  if (error) {
+    return (
+      <>
+        <PageHeading eyebrow="Platform" title="Everything, at a glance" />
+        <LoadError error={error} onRetry={load} what="the platform overview" />
+      </>
+    );
+  }
 
   if (!data) {
     return (

@@ -6,6 +6,7 @@ import { Loader2, Plus, Pencil, Trash2, UtensilsCrossed, X } from 'lucide-react'
 import { get, post, patch, del, ApiError } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { PageHeading, EmptyState } from '@/components/dashboard/DashboardShell';
+import { LoadError } from '@/components/dashboard/LoadError';
 import { formatInr, cn } from '@/lib/utils';
 import { splitPrice, type MenuItem } from '@/lib/types';
 
@@ -43,17 +44,21 @@ const toDraft = (item: MenuItem): Draft => ({
 export default function MenuPage() {
   const { push } = useToast();
   const [items, setItems] = useState<MenuItem[] | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [editing, setEditing] = useState<MenuItem | null>(null);
   const [draft, setDraft] = useState<Draft>(BLANK);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
+    setError(null);
     try {
       const data = await get<{ items: MenuItem[] }>('/menu/me');
       setItems(data.items);
-    } catch {
-      setItems([]);
+    } catch (err) {
+      // An empty menu and a failed request look the same to a restaurant owner
+      // unless we say which happened.
+      setError(err);
     }
   }, []);
 
@@ -140,7 +145,9 @@ export default function MenuPage() {
         }
       />
 
-      {items === null ? (
+      {error ? (
+        <LoadError error={error} onRetry={() => void load()} what="your donation menu" />
+      ) : items === null ? (
         <div className="flex min-h-[30dvh] items-center justify-center">
           <Loader2 className="size-5 animate-spin text-ink-mute" />
         </div>

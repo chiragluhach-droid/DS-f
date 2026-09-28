@@ -6,6 +6,7 @@ import { Loader2, Download, Copy, Check, Printer } from 'lucide-react';
 import { get } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { PageHeading } from '@/components/dashboard/DashboardShell';
+import { LoadError } from '@/components/dashboard/LoadError';
 
 interface QrData {
   url: string;
@@ -17,12 +18,13 @@ interface QrData {
 export default function QrPage() {
   const { push } = useToast();
   const [data, setData] = useState<QrData | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     void get<QrData>('/restaurants/me/qr')
       .then(setData)
-      .catch(() => setData(null));
+      .catch(setError);
   }, []);
 
   const copy = async () => {
@@ -43,6 +45,15 @@ export default function QrPage() {
     a.download = `daansetu-qr-${data.restaurantName.toLowerCase().replace(/\s+/g, '-')}.png`;
     a.click();
   };
+
+  if (error) {
+    return (
+      <>
+        <PageHeading eyebrow="QR code" title="Put this on your tables" />
+        <LoadError error={error} what="your QR code" />
+      </>
+    );
+  }
 
   if (!data) {
     return (

@@ -6,6 +6,7 @@ import { Loader2, PackageCheck, AlertTriangle, Check } from 'lucide-react';
 import { get, patch, ApiError } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { PageHeading, EmptyState } from '@/components/dashboard/DashboardShell';
+import { LoadError } from '@/components/dashboard/LoadError';
 import { BatchStatusBadge } from '@/components/StatusBadge';
 import { formatDate, cn } from '@/lib/utils';
 import { BATCH_STATUSES, BATCH_META, type Batch, type Restaurant, type Ngo } from '@/lib/types';
@@ -20,6 +21,7 @@ export default function AdminBatchesPage() {
   const { push } = useToast();
   const [filter, setFilter] = useState('all');
   const [batches, setBatches] = useState<Batch[] | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [resolving, setResolving] = useState<Batch | null>(null);
 
   const load = useCallback(async () => {
@@ -33,8 +35,9 @@ export default function AdminBatchesPage() {
     try {
       const data = await get<{ batches: Batch[] }>(`/admin/batches?${query}`);
       setBatches(data.batches);
-    } catch {
-      setBatches([]);
+      setError(null);
+    } catch (err) {
+      setError(err);
     }
   }, [filter]);
 
@@ -67,7 +70,9 @@ export default function AdminBatchesPage() {
         ))}
       </div>
 
-      {batches === null ? (
+      {error ? (
+        <LoadError error={error} onRetry={() => void load()} what="batches" />
+      ) : batches === null ? (
         <div className="flex min-h-[30dvh] items-center justify-center">
           <Loader2 className="size-5 animate-spin text-ink-mute" />
         </div>

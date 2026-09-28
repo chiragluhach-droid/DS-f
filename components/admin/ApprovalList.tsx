@@ -7,6 +7,7 @@ import { Loader2, Check, X, Pause, ExternalLink, MapPin, Inbox } from 'lucide-re
 import { get, patch, ApiError } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { PageHeading, EmptyState } from '@/components/dashboard/DashboardShell';
+import { LoadError } from '@/components/dashboard/LoadError';
 import { formatInr, formatNumber, formatDate, cn } from '@/lib/utils';
 
 type Approval = 'pending' | 'approved' | 'rejected' | 'suspended';
@@ -62,6 +63,7 @@ export function ApprovalList({
   const { push } = useToast();
   const [filter, setFilter] = useState('pending');
   const [items, setItems] = useState<ApprovalEntity[] | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -69,8 +71,9 @@ export function ApprovalList({
     try {
       const data = await get<Record<string, ApprovalEntity[]>>(`${endpoint}?status=${filter}`);
       setItems(data[listKey] ?? []);
-    } catch {
-      setItems([]);
+      setError(null);
+    } catch (err) {
+      setError(err);
     }
   }, [endpoint, filter, listKey]);
 
@@ -112,7 +115,9 @@ export function ApprovalList({
         ))}
       </div>
 
-      {items === null ? (
+      {error ? (
+        <LoadError error={error} onRetry={() => void load()} what={kind === 'ngo' ? 'NGOs' : 'restaurants'} />
+      ) : items === null ? (
         <div className="flex min-h-[30dvh] items-center justify-center">
           <Loader2 className="size-5 animate-spin text-ink-mute" />
         </div>

@@ -5,6 +5,7 @@ import { Loader2, PackageCheck, Truck, X, AlertTriangle } from 'lucide-react';
 import { get, post, ApiError } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { PageHeading, EmptyState, StatCard } from '@/components/dashboard/DashboardShell';
+import { LoadError } from '@/components/dashboard/LoadError';
 import { BatchStatusBadge } from '@/components/StatusBadge';
 import { formatDate, formatTime, cn, pluralize } from '@/lib/utils';
 import { BATCH_META, type Batch, type BatchSummary, type Ngo } from '@/lib/types';
@@ -17,19 +18,30 @@ interface Data {
 export default function RestaurantBatchesPage() {
   const { push } = useToast();
   const [data, setData] = useState<Data | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [dispatching, setDispatching] = useState<Batch | null>(null);
 
   const load = useCallback(async () => {
+    setError(null);
     try {
       setData(await get<Data>('/batches/restaurant'));
     } catch (err) {
-      push(err instanceof ApiError ? err.message : 'Could not load your batches.', 'error');
+      setError(err);
     }
-  }, [push]);
+  }, []);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  if (error) {
+    return (
+      <>
+        <PageHeading eyebrow="Batches" title="What to cook, and what has gone" />
+        <LoadError error={error} onRetry={() => void load()} what="your batches" />
+      </>
+    );
+  }
 
   if (!data) {
     return (

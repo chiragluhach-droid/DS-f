@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Loader2, UtensilsCrossed } from 'lucide-react';
 import { get } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { StatusBadge } from '@/components/StatusBadge';
+import { LoadError } from '@/components/dashboard/LoadError';
 import { formatInr, formatNumber, formatDate } from '@/lib/utils';
 import type { Donation, Restaurant } from '@/lib/types';
 import { DONATE_HREF } from '@/lib/config';
@@ -25,17 +26,22 @@ interface Data {
 export function MyDonations() {
   const { user } = useAuth();
   const [data, setData] = useState<Data | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
-  useEffect(() => {
-    void get<Data>('/donations/mine')
-      .then(setData)
-      .catch(() =>
-        setData({
-          donations: [],
-          totals: { portions: 0, customerPaidPaise: 0, foodValuePaise: 0, count: 0, completed: 0 },
-        })
-      );
+  const load = useCallback(() => {
+    setError(null);
+    void get<Data>('/donations/mine').then(setData).catch(setError);
   }, []);
+
+  useEffect(load, [load]);
+
+  if (error) {
+    return (
+      <section className="container-lux py-16">
+        <LoadError error={error} onRetry={load} what="your donations" />
+      </section>
+    );
+  }
 
   if (!data) {
     return (

@@ -5,6 +5,7 @@ import { Loader2, PackageCheck, Check, AlertTriangle, X } from 'lucide-react';
 import { get, post, ApiError } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { PageHeading, EmptyState, StatCard } from '@/components/dashboard/DashboardShell';
+import { LoadError } from '@/components/dashboard/LoadError';
 import { BatchStatusBadge } from '@/components/StatusBadge';
 import { formatDate, formatTime, cn, pluralize } from '@/lib/utils';
 import type { Batch, BatchSummary, Restaurant } from '@/lib/types';
@@ -17,19 +18,30 @@ interface Data {
 export default function NgoBatchesPage() {
   const { push } = useToast();
   const [data, setData] = useState<Data | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [confirming, setConfirming] = useState<Batch | null>(null);
 
   const load = useCallback(async () => {
+    setError(null);
     try {
       setData(await get<Data>('/batches/ngo'));
     } catch (err) {
-      push(err instanceof ApiError ? err.message : 'Could not load incoming food.', 'error');
+      setError(err);
     }
-  }, [push]);
+  }, []);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  if (error) {
+    return (
+      <>
+        <PageHeading eyebrow="Incoming food" title="Count it, then confirm" />
+        <LoadError error={error} onRetry={() => void load()} what="incoming food" />
+      </>
+    );
+  }
 
   if (!data) {
     return (

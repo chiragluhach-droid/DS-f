@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Loader2, ArrowRight, PackageCheck, AlertTriangle } from 'lucide-react';
 import { get } from '@/lib/api';
 import { PageHeading, StatCard, EmptyState } from '@/components/dashboard/DashboardShell';
+import { LoadError } from '@/components/dashboard/LoadError';
 import { BatchStatusBadge } from '@/components/StatusBadge';
 import { formatInr, formatNumber, formatDate, pluralize } from '@/lib/utils';
 import type { Batch, BatchSummary, Ngo, Restaurant } from '@/lib/types';
@@ -25,8 +26,10 @@ export default function NgoOverview() {
   const [data, setData] = useState<BatchData | null>(null);
   const [expected, setExpected] = useState<DonationData['summary'] | null>(null);
   const [ngo, setNgo] = useState<Ngo | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setError(null);
     void Promise.all([
       get<BatchData>('/batches/ngo'),
       get<DonationData>('/ngos/me/donations'),
@@ -37,8 +40,19 @@ export default function NgoOverview() {
         setExpected(donationData.summary);
         setNgo(ngoData.ngo);
       })
-      .catch(() => setData({ batches: [], summary: EMPTY_SUMMARY }));
+      .catch(setError);
   }, []);
+
+  useEffect(load, [load]);
+
+  if (error) {
+    return (
+      <>
+        <PageHeading eyebrow="Overview" title="What is coming to you" />
+        <LoadError error={error} onRetry={load} what="your dashboard" />
+      </>
+    );
+  }
 
   if (!data) {
     return (

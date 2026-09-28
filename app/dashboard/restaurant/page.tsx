@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Loader2, ArrowRight } from 'lucide-react';
 import { get } from '@/lib/api';
 import { PageHeading, StatCard } from '@/components/dashboard/DashboardShell';
+import { LoadError } from '@/components/dashboard/LoadError';
 import { BarChart, type Point } from '@/components/dashboard/BarChart';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatInr, formatNumber, formatDate } from '@/lib/utils';
@@ -34,8 +35,10 @@ interface Analytics {
 export default function RestaurantOverview() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [recent, setRecent] = useState<Donation[]>([]);
+  const [error, setError] = useState<unknown>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setError(null);
     void Promise.all([
       get<Analytics>('/restaurants/me/analytics'),
       get<{ donations: Donation[] }>('/restaurants/me/donations?limit=6'),
@@ -44,8 +47,19 @@ export default function RestaurantOverview() {
         setAnalytics(a);
         setRecent(d.donations);
       })
-      .catch(() => setAnalytics(null));
+      .catch(setError);
   }, []);
+
+  useEffect(load, [load]);
+
+  if (error) {
+    return (
+      <>
+        <PageHeading eyebrow="Overview" title="Today at the counter" />
+        <LoadError error={error} onRetry={load} what="your dashboard" />
+      </>
+    );
+  }
 
   if (!analytics) {
     return (

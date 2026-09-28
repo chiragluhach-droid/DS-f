@@ -6,6 +6,7 @@ import { Loader2, HeartHandshake, MapPin, Star, Pause, Play, Plus } from 'lucide
 import { get, post, patch, ApiError } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { PageHeading, EmptyState } from '@/components/dashboard/DashboardShell';
+import { LoadError } from '@/components/dashboard/LoadError';
 import { formatNumber, cn, pluralize } from '@/lib/utils';
 import type { Ngo } from '@/lib/types';
 
@@ -32,15 +33,17 @@ const STATUS_TONE: Record<string, string> = {
 export default function RestaurantPartnersPage() {
   const { push } = useToast();
   const [data, setData] = useState<Data | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    setError(null);
     try {
       setData(await get<Data>('/restaurants/me/ngos'));
     } catch (err) {
-      push(err instanceof ApiError ? err.message : 'Could not load your partners.', 'error');
+      setError(err);
     }
-  }, [push]);
+  }, []);
 
   useEffect(() => {
     void load();
@@ -82,6 +85,15 @@ export default function RestaurantPartnersPage() {
       setBusy(null);
     }
   };
+
+  if (error) {
+    return (
+      <>
+        <PageHeading eyebrow="NGO partners" title="Where your food goes" />
+        <LoadError error={error} onRetry={() => void load()} what="your partners" />
+      </>
+    );
+  }
 
   if (!data) {
     return (

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Loader2, FileClock } from 'lucide-react';
 import { get } from '@/lib/api';
 import { PageHeading, EmptyState } from '@/components/dashboard/DashboardShell';
+import { LoadError } from '@/components/dashboard/LoadError';
 import { formatDate, formatTime, relativeTime, cn } from '@/lib/utils';
 
 interface AuditLog {
@@ -24,12 +25,14 @@ const ENTITIES = ['all', 'Donation', 'Restaurant', 'Ngo', 'MenuItem', 'User'];
 export default function AuditPage() {
   const [entityType, setEntityType] = useState('all');
   const [logs, setLogs] = useState<AuditLog[] | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
     setLogs(null);
+    setError(null);
     void get<{ logs: AuditLog[] }>(`/admin/audit-logs?entityType=${entityType}`)
       .then((d) => setLogs(d.logs))
-      .catch(() => setLogs([]));
+      .catch(setError);
   }, [entityType]);
 
   return (
@@ -57,7 +60,9 @@ export default function AuditPage() {
         ))}
       </div>
 
-      {logs === null ? (
+      {error ? (
+        <LoadError error={error} what="the audit log" />
+      ) : logs === null ? (
         <div className="flex min-h-[30dvh] items-center justify-center">
           <Loader2 className="size-5 animate-spin text-ink-mute" />
         </div>

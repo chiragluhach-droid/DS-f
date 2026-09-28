@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Users, Search } from 'lucide-react';
 import { get } from '@/lib/api';
 import { PageHeading, EmptyState } from '@/components/dashboard/DashboardShell';
+import { LoadError } from '@/components/dashboard/LoadError';
 import { formatDate, cn } from '@/lib/utils';
 import type { Role } from '@/lib/types';
 
@@ -38,6 +39,7 @@ export default function AdminUsersPage() {
   const [role, setRole] = useState('all');
   const [query, setQuery] = useState('');
   const [users, setUsers] = useState<AdminUser[] | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   const load = useCallback(async () => {
     try {
@@ -45,8 +47,9 @@ export default function AdminUsersPage() {
         `/admin/users?role=${role}&q=${encodeURIComponent(query)}`
       );
       setUsers(data.users);
-    } catch {
-      setUsers([]);
+      setError(null);
+    } catch (err) {
+      setError(err);
     }
   }, [role, query]);
 
@@ -94,7 +97,9 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
-      {users === null ? (
+      {error ? (
+        <LoadError error={error} onRetry={() => void load()} what="users" />
+      ) : users === null ? (
         <div className="flex min-h-[30dvh] items-center justify-center">
           <Loader2 className="size-5 animate-spin text-ink-mute" />
         </div>
