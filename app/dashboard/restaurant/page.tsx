@@ -8,7 +8,13 @@ import { PageHeading, StatCard } from '@/components/dashboard/DashboardShell';
 import { BarChart, type Point } from '@/components/dashboard/BarChart';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatInr, formatNumber, formatDate } from '@/lib/utils';
-import { DONATION_STATUSES, STATUS_META, type Donation, type Ngo } from '@/lib/types';
+import {
+  DONATION_STATUSES,
+  statusMeta,
+  type BatchSummary,
+  type Donation,
+  type Ngo,
+} from '@/lib/types';
 
 interface Analytics {
   totals: {
@@ -22,6 +28,7 @@ interface Analytics {
   byStatus: Record<string, number>;
   daily: { _id: string; portions: number; foodValuePaise: number }[];
   topItems: { _id: string; quantity: number; foodValuePaise: number }[];
+  batches: BatchSummary;
 }
 
 export default function RestaurantOverview() {
@@ -53,7 +60,9 @@ export default function RestaurantOverview() {
     value: d.portions,
   }));
 
-  const toHandOver = analytics.byStatus.ASSIGNED_TO_BATCH ?? 0;
+  // What actually needs the kitchen's hands today: full batches to cook.
+  const readyToCook = analytics.batches?.readyToCook ?? 0;
+  const portionsToCook = analytics.batches?.byStatus.READY_FOR_DELIVERY.portions ?? 0;
 
   return (
     <>
@@ -72,7 +81,7 @@ export default function RestaurantOverview() {
               {formatNumber(analytics.today.portions)}
             </p>
             <p className="mt-1.5 text-[11.5px] uppercase tracking-[0.11em] text-ink-mute">
-              Portions to cook
+              Portions funded
             </p>
           </div>
           <div>
@@ -113,10 +122,10 @@ export default function RestaurantOverview() {
           tone="emerald"
         />
         <StatCard
-          label="Needs your action"
-          value={formatNumber(toHandOver)}
-          sub="To cook and hand over"
-          tone={toHandOver > 0 ? 'amber' : 'default'}
+          label="Ready to cook"
+          value={formatNumber(readyToCook)}
+          sub={`${formatNumber(portionsToCook)} portions to send`}
+          tone={readyToCook > 0 ? 'amber' : 'default'}
         />
       </div>
 
@@ -136,7 +145,7 @@ export default function RestaurantOverview() {
               return (
                 <li key={s}>
                   <div className="flex items-center justify-between text-[13px]">
-                    <span className="text-ink-soft">{STATUS_META[s].label}</span>
+                    <span className="text-ink-soft">{statusMeta(s).label}</span>
                     <span className="numeral text-ink">{count}</span>
                   </div>
                   <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-line-soft">
@@ -174,10 +183,10 @@ export default function RestaurantOverview() {
         <div className="flex items-center justify-between pb-5">
           <h2 className="display-sm">Recent donations</h2>
           <Link
-            href="/dashboard/restaurant/donations"
+            href="/dashboard/restaurant/batches"
             className="group flex items-center gap-1.5 text-[13px] text-ink-soft transition-colors hover:text-emerald"
           >
-            See all
+            See batches
             <ArrowRight size={13} className="transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
@@ -186,7 +195,8 @@ export default function RestaurantOverview() {
           {recent.map((d) => (
             <li key={d._id}>
               <Link
-                href={`/dashboard/restaurant/donations?focus=${d.donationId}`}
+                href={`/track/${d.donationId}`}
+                target="_blank"
                 className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-[14px] border border-line bg-surface p-4 transition-colors hover:border-emerald/30"
               >
                 <span className="numeral text-[13px] tracking-[0.03em] text-ink-mute">

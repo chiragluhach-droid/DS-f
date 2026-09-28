@@ -6,14 +6,14 @@ import { Loader2, PackageCheck, AlertTriangle, Check } from 'lucide-react';
 import { get, patch, ApiError } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { PageHeading, EmptyState } from '@/components/dashboard/DashboardShell';
-import { StatusBadge } from '@/components/StatusBadge';
+import { BatchStatusBadge } from '@/components/StatusBadge';
 import { formatDate, cn } from '@/lib/utils';
-import { BATCH_STATUSES, STATUS_META, type Batch, type Restaurant, type Ngo } from '@/lib/types';
+import { BATCH_STATUSES, BATCH_META, type Batch, type Restaurant, type Ngo } from '@/lib/types';
 
 const FILTERS = [
   { value: 'all', label: 'All' },
   { value: 'flagged', label: 'Flagged' },
-  ...BATCH_STATUSES.map((s) => ({ value: s, label: STATUS_META[s].short })),
+  ...BATCH_STATUSES.map((s) => ({ value: s, label: BATCH_META[s].short })),
 ];
 
 export default function AdminBatchesPage() {
@@ -25,7 +25,11 @@ export default function AdminBatchesPage() {
   const load = useCallback(async () => {
     setBatches(null);
     const query =
-      filter === 'flagged' ? 'flagged=true' : filter === 'all' ? 'status=all' : `status=${filter}`;
+      filter === 'flagged'
+        ? 'status=RECONCILIATION_REQUIRED'
+        : filter === 'all'
+          ? 'status=all'
+          : `status=${filter}`;
     try {
       const data = await get<{ batches: Batch[] }>(`/admin/batches?${query}`);
       setBatches(data.batches);
@@ -94,7 +98,7 @@ export default function AdminBatchesPage() {
                       <span className="numeral text-[13px] tracking-[0.03em] text-ink-mute">
                         {d.batchId}
                       </span>
-                      <StatusBadge status={d.status} short />
+                      <BatchStatusBadge status={d.status} short />
                       {open && (
                         <span
                           className={cn(
@@ -187,7 +191,7 @@ function ResolveDialog({
     e.preventDefault();
     setSaving(true);
     try {
-      await patch(`/admin/batches/${batch.batchId}/discrepancy`, {
+      await patch(`/admin/batches/${batch.batchId}/resolve`, {
         resolutionNote: note.trim(),
       });
       push('Discrepancy resolved.', 'success');

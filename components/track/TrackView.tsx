@@ -13,6 +13,7 @@ import {
   ExternalLink,
   MapPin,
   AlertTriangle,
+  Send,
 } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -21,20 +22,24 @@ import { Timeline } from "./Timeline";
 import { Celebrate } from "./Celebrate";
 import { useToast } from "@/components/Toast";
 import { formatInr, formatDate, cn, displayDomain } from "@/lib/utils";
+import { BatchProgress } from "./BatchProgress";
 import {
-  STATUS_META,
+  statusMeta,
   type Donation,
   type DonationEvent,
   type Restaurant,
   type Ngo,
+  type TrackedBatch,
 } from "@/lib/types";
 
 export function TrackView({
   donation,
   timeline,
+  batches,
 }: {
   donation: Donation;
   timeline: DonationEvent[];
+  batches: TrackedBatch[];
 }) {
   const params = useSearchParams();
   const { push } = useToast();
@@ -43,9 +48,13 @@ export function TrackView({
 
   const restaurant = donation.restaurant as Restaurant;
   const ngo = donation.ngo as Ngo | undefined;
-  const flagged =
-    donation.discrepancy?.hasDiscrepancy && !donation.discrepancy?.resolvedAt;
   const complete = donation.status === "NGO_CONFIRMED";
+  // A shortfall belongs to the batch the food travelled in, and stays visible
+  // until an admin records what was done about it.
+  const shortfalls = batches.filter((b) => b.shortfall);
+  const flagged = shortfalls.some((b) => !b.resolutionNote);
+  const portionsReceived = batches.reduce((sum, b) => sum + (b.receivedQuantity ?? 0), 0);
+  const allCounted = batches.length > 0 && batches.every((b) => b.receivedAt);
 
   useEffect(() => {
     if (!celebrate) return;
@@ -60,15 +69,24 @@ export function TrackView({
     return () => clearTimeout(t);
   }, [celebrate, push]);
 
-  const copyId = async () => {
+  const trackingUrl =
+    typeof window === "undefined"
+      ? `https://daansetu.in/track/${donation.donationId}`
+      : `${window.location.origin}/track/${donation.donationId}`;
+
+  const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(donation.donationId);
+      await navigator.clipboard.writeText(trackingUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2200);
     } catch {
       push("Could not copy — select the ID and copy it manually.", "error");
     }
   };
+
+  const whatsappHref = `https://wa.me/?text=${encodeURIComponent(
+    `I funded ${donation.totalPortions} ${donation.totalPortions === 1 ? "portion" : "portions"} of food at ${restaurant.name} on DaanSetu. Follow it here: ${trackingUrl}`,
+  )}`;
 
   return (
     <>
@@ -110,7 +128,7 @@ export function TrackView({
                   {donation.totalPortions === 1 ? "portion" : "portions"},
                   currently{" "}
                   <em className="font-normal italic text-emerald">
-                    {STATUS_META[donation.status].short.toLowerCase()}.
+                    {statusMeta(donation.status).short.toLowerCase()}.
                   </em>
                 </>
               )}
@@ -124,7 +142,8 @@ export function TrackView({
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <button
-                onClick={copyId}
+                onClick={copyLink}
+                title="Copy this donation's tracking link"
                 className="group flex items-center gap-2.5 rounded-full border border-line bg-surface px-4 py-2.5 transition-colors hover:border-emerald/40"
               >
                 <span className="text-[10.5px] uppercase tracking-[0.12em] text-ink-mute">
@@ -144,33 +163,15 @@ export function TrackView({
               </button>
 
 
-              {donation.items[0]?.batch?.batchId && (
-                <div className="flex flex-col gap-2 rounded-2xl border border-line bg-surface px-5 py-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[12px] font-medium uppercase tracking-[0.08em] text-ink-mute">
-                      Batch <span className="font-mono text-ink-soft">{donation.items[0].batch.batchId}</span>
-                    </span>
-                    <span className="text-[12px] font-medium text-ink-mute">
-                      {donation.items[0].batch.collectedQuantity} / {donation.items[0].batch.targetQuantity} funded
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-line/60">
-                    <div
-                      className="h-full rounded-full bg-emerald transition-all duration-1000"
-                      style={{
-                        width: `${Math.min(
-                          100,
-                          Math.round(
-                            (donation.items[0].batch.collectedQuantity /
-                              donation.items[0].batch.targetQuantity) *
-                              100,
-                          ),
-                        )}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2.5 text-[12.5px] text-ink-soft transition-colors hover:border-emerald/40 hover:text-emerald"
+              >
+                <Send size={13} strokeWidth={1.8} />
+                Send myself the link
+              </a>
             </div>
           </div>
         </section>
@@ -181,8 +182,8 @@ export function TrackView({
             <div className="max-w-2xl">
               <h2 className="display-sm">The journey</h2>
               <p className="mt-2 text-[13.5px] text-ink-soft">
-                Three checkpoints. Each can only be set once, and only by its
-                owner.
+                Four checkpoints. Each is stamped once, by whoever is
+                responsible for it.
               </p>
               <div className="mt-9">
                 <Timeline
@@ -192,7 +193,7 @@ export function TrackView({
                 />
               </div>
 
-              {complete && donation.portionsReceived !== undefined && (
+              {allCounted && (
                 <div
                   className={cn(
                     "mt-10 rounded-[18px] border p-6",
@@ -205,7 +206,7 @@ export function TrackView({
                   <div className="mt-4 flex flex-wrap items-baseline gap-x-8 gap-y-3">
                     <div>
                       <p className="numeral text-[2.2rem] leading-none text-emerald">
-                        {donation.portionsReceived}
+                        {portionsReceived}
                       </p>
                       <p className="mt-1.5 text-[11.5px] uppercase tracking-[0.1em] text-ink-mute">
                         Portions received
@@ -223,6 +224,20 @@ export function TrackView({
                 </div>
               )}
             </div>
+
+            {batches.length > 0 && (
+              <div className="mt-12 max-w-2xl">
+                <h2 className="display-sm">Your dishes, and the batch they travel in</h2>
+                <p className="mt-2 text-[13.5px] leading-relaxed text-ink-soft">
+                  {restaurant.name} cooks in batches, so your plates go out
+                  with others funded for the same dish. Nothing is sent until the
+                  batch is cooked, and the NGO counts every portion on arrival.
+                </p>
+                <div className="mt-6">
+                  <BatchProgress batches={batches} />
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
@@ -237,10 +252,11 @@ export function TrackView({
               />
               <div>
                 <p className="text-[14px] font-medium text-ink">
-                  A shortfall was reported on this donation
+                  The NGO counted fewer portions than were sent
                 </p>
                 <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">
-                  {donation.discrepancy?.note}
+                  {shortfalls[0]?.receiptNote ??
+                    `${shortfalls[0]?.receivedQuantity} of ${shortfalls[0]?.dispatchedQuantity} portions were received.`}
                 </p>
                 <p className="mt-2.5 text-[12px] text-ink-mute">
                   Our team is reviewing it. We publish these rather than hide

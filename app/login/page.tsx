@@ -21,9 +21,13 @@ export default function LoginPage() {
         <LoginForm />
       </Suspense>
       <p className="mt-7 text-[13px] text-ink-soft">
-        Donating for the first time?{' '}
-        <Link href="/restaurants" className="text-emerald underline underline-offset-2">
-          You don&rsquo;t need an account
+        Donating for the first time? You don&rsquo;t need an account — just scan the code at a
+        partner restaurant.
+      </p>
+      <p className="mt-2 text-[13px] text-ink-soft">
+        Run a kitchen or an NGO?{' '}
+        <Link href="/join" className="text-emerald underline underline-offset-2">
+          Apply to join
         </Link>
         .
       </p>

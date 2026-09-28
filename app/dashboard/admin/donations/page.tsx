@@ -103,9 +103,7 @@ export default function AdminDonationsPage() {
                       {formatInr(d.totalFoodValuePaise)}
                     </p>
                     <p className="mt-1 text-[11.5px] text-ink-mute">
-                      {d.portionsReceived !== undefined
-                        ? `${d.portionsReceived}/${d.totalPortions} portions`
-                        : `${d.totalPortions} portions`}
+                      {d.totalPortions} {d.totalPortions === 1 ? 'portion' : 'portions'}
                     </p>
                     <p className="mt-1 text-[11px] text-ink-faint">
                       guest {formatInr(d.customerPaidPaise)} · kitchen{' '}

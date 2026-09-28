@@ -1,8 +1,11 @@
 export type Role = 'customer' | 'restaurant' | 'ngo' | 'admin';
 
-/** The checkpoints a donation passes through. */
+/**
+ * The four checkpoints a donation passes through after it is paid for. These
+ * mirror the server's lifecycle: payment verification sets the first, and the
+ * batch the food is cooked in carries it through the rest.
+ */
 export const DONATION_STATUSES = [
-  'PENDING_PAYMENT',
   'PAYMENT_SUCCESS',
   'ASSIGNED_TO_BATCH',
   'DISPATCHED',
@@ -10,51 +13,103 @@ export const DONATION_STATUSES = [
 ] as const;
 
 export type DonationStatus = (typeof DONATION_STATUSES)[number];
-export type AnyStatus = DonationStatus | BatchStatus | 'CANCELLED' | 'REFUNDED' | 'FAILED';
+export type AnyStatus =
+  | DonationStatus
+  | 'PENDING_PAYMENT'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'REFUNDED';
 
-export const STATUS_META: Record<AnyStatus, { label: string; short: string; blurb: string }> = {
+export interface StatusMeta {
+  label: string;
+  short: string;
+  blurb: string;
+}
+
+export const STATUS_META: Record<AnyStatus, StatusMeta> = {
   PENDING_PAYMENT: {
-    label: 'Payment pending',
-    short: 'Pending',
-    blurb: 'Waiting for payment confirmation.',
+    label: 'Awaiting payment',
+    short: 'Unpaid',
+    blurb: 'This donation is reserved and waiting for payment to complete.',
   },
   PAYMENT_SUCCESS: {
     label: 'Donation received',
     short: 'Received',
-    blurb: 'Your half is paid and the restaurant has been notified.',
+    blurb: 'Your half is paid and the kitchen has committed the other half.',
   },
   ASSIGNED_TO_BATCH: {
-    label: 'Assigned to Batch',
-    short: 'Batched',
-    blurb: 'Assigned to a batch to be cooked.',
+    label: 'Queued in the kitchen',
+    short: 'In the kitchen',
+    blurb: 'Your dishes are in the next batch being cooked for the NGO.',
   },
   DISPATCHED: {
-    label: 'Handed over to NGO',
-    short: 'Handed over',
-    blurb: 'The kitchen cooked your dishes and handed them to the NGO.',
+    label: 'Cooked and sent',
+    short: 'On the way',
+    blurb: 'The kitchen cooked the batch and sent it to the NGO.',
   },
   NGO_CONFIRMED: {
-    label: 'Confirmed by NGO',
+    label: 'Confirmed by the NGO',
     short: 'Confirmed',
-    blurb: 'Counted, verified and served.',
+    blurb: 'Counted on arrival by the NGO, and served.',
   },
+  FAILED: { label: 'Payment failed', short: 'Failed', blurb: 'This payment did not go through.' },
   CANCELLED: { label: 'Cancelled', short: 'Cancelled', blurb: 'This donation was cancelled.' },
   REFUNDED: { label: 'Refunded', short: 'Refunded', blurb: 'The amount was returned to you.' },
-  FAILED: { label: 'Failed', short: 'Failed', blurb: 'Payment failed.' },
-  IN_PROGRESS: { label: 'In Progress', short: 'Collecting', blurb: 'Collecting donations.' },
-  READY_FOR_DELIVERY: { label: 'Ready for delivery', short: 'Ready', blurb: 'Ready to be dispatched.' },
-  NGO_RECEIVED: { label: 'NGO Received', short: 'Received', blurb: 'NGO received the batch.' },
-  RECONCILIATION_REQUIRED: { label: 'Reconciliation', short: 'Flagged', blurb: 'Requires admin attention.' },
-  COMPLETED: { label: 'Completed', short: 'Completed', blurb: 'Batch delivered and closed.' },
 };
+
+/** A status the server may add that this build does not know about yet. */
+export const statusMeta = (status: string): StatusMeta =>
+  STATUS_META[status as AnyStatus] ?? {
+    label: status.replace(/_/g, ' ').toLowerCase(),
+    short: status.replace(/_/g, ' ').toLowerCase(),
+    blurb: '',
+  };
 
 /** Who owns each checkpoint — shown on the landing page and the timeline. */
 export const STATUS_ACTOR_LABEL: Record<DonationStatus, string> = {
-  PENDING_PAYMENT: 'You',
   PAYMENT_SUCCESS: 'You',
-  ASSIGNED_TO_BATCH: 'System',
+  ASSIGNED_TO_BATCH: 'The kitchen',
   DISPATCHED: 'The kitchen',
   NGO_CONFIRMED: 'The NGO',
+};
+
+/** A batch's own lifecycle, as the kitchen and NGO dashboards show it. */
+export const BATCH_STATUSES = [
+  'IN_PROGRESS',
+  'READY_FOR_DELIVERY',
+  'DISPATCHED',
+  'RECONCILIATION_REQUIRED',
+  'COMPLETED',
+] as const;
+
+export type BatchStatus = (typeof BATCH_STATUSES)[number];
+
+export const BATCH_META: Record<BatchStatus, { label: string; short: string; blurb: string }> = {
+  IN_PROGRESS: {
+    label: 'Collecting',
+    short: 'Collecting',
+    blurb: 'Guests are still funding portions for this batch.',
+  },
+  READY_FOR_DELIVERY: {
+    label: 'Ready to cook',
+    short: 'Ready',
+    blurb: 'The target is met. Cook it and send it out.',
+  },
+  DISPATCHED: {
+    label: 'With the NGO',
+    short: 'Sent',
+    blurb: 'Sent to the NGO and waiting on their count.',
+  },
+  RECONCILIATION_REQUIRED: {
+    label: 'Count did not match',
+    short: 'Flagged',
+    blurb: 'The NGO received a different number than was sent. Under review.',
+  },
+  COMPLETED: {
+    label: 'Closed',
+    short: 'Closed',
+    blurb: 'Received, counted and confirmed.',
+  },
 };
 
 export interface User {
@@ -85,6 +140,8 @@ export interface RestaurantStats {
   totalFoodValuePaise: number;
 }
 
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
+
 export interface Restaurant {
   _id: string;
   name: string;
@@ -98,7 +155,7 @@ export interface Restaurant {
   coverImage?: string;
   logoImage?: string;
   fssaiLicense?: string;
-  approvalStatus: 'pending' | 'approved' | 'rejected' | 'suspended';
+  approvalStatus: ApprovalStatus;
   isAcceptingDonations: boolean;
   qrToken: string;
   stats: RestaurantStats;
@@ -119,7 +176,7 @@ export interface Ngo {
   coverImage?: string;
   beneficiaryFocus: string[];
   dailyCapacity: number;
-  approvalStatus: 'pending' | 'approved' | 'rejected' | 'suspended';
+  approvalStatus: ApprovalStatus;
   stats: { portionsReceived: number; donationsConfirmed: number };
   createdAt: string;
 }
@@ -130,8 +187,9 @@ export interface MenuItem {
   description?: string;
   /** The dish's normal menu price. */
   mrpPaise: number;
-  /** Share of the MRP the guest pays; the restaurant covers the rest. */
+  /** Share of the MRP the guest pays. Fixed at 50 across the platform. */
   customerSharePercent: number;
+  /** Portions of this dish collected before the kitchen cooks a batch. */
   batchTarget: number;
   image?: string;
   category: string;
@@ -149,18 +207,17 @@ export function splitPrice(mrpPaise: number, customerSharePercent: number) {
 }
 
 export interface DonationItem {
-  menuItem: string;
+  menuItem?: string;
   name: string;
   image?: string;
   quantity: number;
   mrpPaise: number;
   customerSharePercent: number;
-  customerPaysPaise: number;
-  restaurantPaysPaise: number;
   lineCustomerPaise: number;
   lineRestaurantPaise: number;
   lineFoodValuePaise: number;
-  batch?: Batch;
+  /** The batch this dish is cooked in, once the donation is paid. */
+  batch?: string;
 }
 
 export interface Donation {
@@ -170,7 +227,6 @@ export interface Donation {
   ngo?: Ngo | string;
   donorSnapshot: {
     name: string;
-    email: string;
     phone?: string;
     isAnonymous: boolean;
     message?: string;
@@ -182,14 +238,6 @@ export interface Donation {
   totalFoodValuePaise: number;
   status: AnyStatus;
   isPaid: boolean;
-  portionsReceived?: number;
-  discrepancy?: {
-    hasDiscrepancy: boolean;
-    note?: string;
-    reportedAt?: string;
-    resolvedAt?: string;
-    resolutionNote?: string;
-  };
   timestamps_: Partial<Record<AnyStatus, string>>;
   createdAt: string;
 }
@@ -205,35 +253,63 @@ export interface DonationEvent {
   createdAt: string;
 }
 
-export const BATCH_STATUSES = [
-  'IN_PROGRESS',
-  'READY_FOR_DELIVERY',
-  'DISPATCHED',
-  'NGO_RECEIVED',
-  'RECONCILIATION_REQUIRED',
-  'COMPLETED'
-] as const;
+/** What a donor is shown about the batch each of their dishes travelled in. */
+export interface TrackedBatch {
+  itemName: string;
+  quantity: number;
+  batchId?: string;
+  status?: BatchStatus;
+  targetQuantity?: number;
+  collectedQuantity?: number;
+  dispatchedQuantity?: number;
+  receivedQuantity?: number;
+  readyAt?: string;
+  dispatchedAt?: string;
+  receivedAt?: string;
+  receiptNote?: string;
+  shortfall?: boolean;
+  resolutionNote?: string;
+}
 
-export type BatchStatus = typeof BATCH_STATUSES[number];
-
+/** A batch as the kitchen, NGO and admin dashboards see it. */
 export interface Batch {
   _id: string;
   batchId: string;
   restaurant: Restaurant | string;
   ngo: Ngo | string;
-  menuItem: MenuItem | string;
+  menuItem?: { _id: string; name: string; image?: string; category?: string } | string;
   itemName: string;
+  status: BatchStatus;
   targetQuantity: number;
   collectedQuantity: number;
-  dispatchedQuantity?: number;
-  receivedQuantity?: number;
-  status: BatchStatus;
+  donationCount: number;
+  dispatchedQuantity: number;
+  receivedQuantity: number;
   readyAt?: string;
   dispatchedAt?: string;
   receivedAt?: string;
+  dispatchNote?: string;
   receiptNote?: string;
-  resolution?: {
-    note: string;
-  };
+  resolution?: { note: string; resolvedAt: string };
+  createdAt: string;
+}
+
+export interface BatchSummary {
+  collecting: number;
+  readyToCook: number;
+  inTransit: number;
+  flagged: number;
+  portionsAwaitingDispatch: number;
+  portionsInTransit: number;
+  byStatus: Record<BatchStatus, { batches: number; portions: number }>;
+}
+
+export interface BatchEvent {
+  _id: string;
+  fromStatus?: BatchStatus;
+  toStatus: BatchStatus;
+  actorType: Role | 'system';
+  actorName: string;
+  note?: string;
   createdAt: string;
 }

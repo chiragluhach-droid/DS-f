@@ -3,11 +3,13 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { serverGet } from '@/lib/api';
 import { TrackView } from '@/components/track/TrackView';
-import type { Donation, DonationEvent } from '@/lib/types';
+import type { Donation, DonationEvent, TrackedBatch } from '@/lib/types';
 
 interface TrackData {
   donation: Donation;
   timeline: DonationEvent[];
+  /** The batch each dish in the donation is cooked in. */
+  batches: TrackedBatch[];
 }
 
 export async function generateMetadata({
@@ -30,7 +32,11 @@ export default async function TrackDonationPage({
 
   return (
     <Suspense fallback={null}>
-      <TrackView donation={data.donation} timeline={data.timeline} />
+      <TrackView
+        donation={data.donation}
+        timeline={data.timeline}
+        batches={data.batches ?? []}
+      />
     </Suspense>
   );
 }

@@ -55,7 +55,7 @@ export function AuthShell({
             &ldquo;A donation nobody can quietly lose.&rdquo;
           </p>
           <p className="mt-4 text-[13px] text-paper/50">
-            Six checkpoints. Each one signed by the role that owns it.
+            Four checkpoints. Each one signed by the role that owns it.
           </p>
         </div>
       </div>

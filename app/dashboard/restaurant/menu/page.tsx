@@ -9,11 +9,13 @@ import { PageHeading, EmptyState } from '@/components/dashboard/DashboardShell';
 import { formatInr, cn } from '@/lib/utils';
 import { splitPrice, type MenuItem } from '@/lib/types';
 
+/** Guests always pay half — the split is fixed across the platform. */
+const CUSTOMER_SHARE_PERCENT = 50;
+
 const BLANK = {
   name: '',
   description: '',
   mrpRupees: '',
-  customerSharePercent: '50',
   batchTarget: '40',
   image: '',
   category: 'Dosa',
@@ -29,7 +31,6 @@ const toDraft = (item: MenuItem): Draft => ({
   name: item.name,
   description: item.description ?? '',
   mrpRupees: String(item.mrpPaise / 100),
-  customerSharePercent: String(item.customerSharePercent),
   batchTarget: String(item.batchTarget || 40),
   image: item.image ?? '',
   category: item.category,
@@ -79,7 +80,6 @@ export default function MenuPage() {
       name: draft.name.trim(),
       description: draft.description.trim() || undefined,
       mrpPaise: Math.round(Number(draft.mrpRupees) * 100),
-      customerSharePercent: Number(draft.customerSharePercent) || 50,
       batchTarget: Number(draft.batchTarget) || 40,
       image: draft.image.trim(),
       category: draft.category.trim() || 'Dosa',
@@ -131,7 +131,7 @@ export default function MenuPage() {
       <PageHeading
         eyebrow="Donation menu"
         title="What guests can fund"
-        description="These are the dishes shown when someone scans your code. Guests pay their share; you commit the rest."
+        description="These are the dishes shown when someone scans your code. A guest pays half the menu price and you commit the other half."
         action={
           <button onClick={openNew} className="btn btn-primary py-2.5 text-[13px]">
             <Plus size={15} />
@@ -306,32 +306,22 @@ export default function MenuPage() {
                   />
                 </div>
                 <div>
-                  <label className="label-lux" htmlFor="m-share">Guest pays (%)</label>
+                  <label className="label-lux" htmlFor="m-target">Batch size (portions)</label>
                   <input
-                    id="m-share"
+                    id="m-target"
                     type="number"
                     min="1"
-                    max="100"
+                    max="1000"
                     required
                     className="field"
-                    value={draft.customerSharePercent}
-                    onChange={(e) => setDraft({ ...draft, customerSharePercent: e.target.value })}
+                    value={draft.batchTarget}
+                    onChange={(e) => setDraft({ ...draft, batchTarget: e.target.value })}
+                    placeholder="40"
                   />
+                  <p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-mute">
+                    Portions guests fund before you cook this dish for the NGO.
+                  </p>
                 </div>
-              </div>
-
-              <div>
-                <label className="label-lux" htmlFor="m-target">Batch target (portions)</label>
-                <input
-                  id="m-target"
-                  type="number"
-                  min="1"
-                  required
-                  className="field"
-                  value={draft.batchTarget}
-                  onChange={(e) => setDraft({ ...draft, batchTarget: e.target.value })}
-                  placeholder="40"
-                />
               </div>
 
               {/* the split, previewed live as they type */}
@@ -345,7 +335,7 @@ export default function MenuPage() {
                       {formatInr(
                         splitPrice(
                           Math.round(Number(draft.mrpRupees) * 100),
-                          Number(draft.customerSharePercent) || 50
+                          CUSTOMER_SHARE_PERCENT
                         ).customerPaysPaise
                       )}
                     </p>
@@ -357,7 +347,7 @@ export default function MenuPage() {
                       {formatInr(
                         splitPrice(
                           Math.round(Number(draft.mrpRupees) * 100),
-                          Number(draft.customerSharePercent) || 50
+                          CUSTOMER_SHARE_PERCENT
                         ).restaurantPaysPaise
                       )}
                     </p>

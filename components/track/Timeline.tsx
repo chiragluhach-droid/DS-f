@@ -1,5 +1,5 @@
 import { Check, AlertTriangle } from 'lucide-react';
-import { DONATION_STATUSES, STATUS_META, type AnyStatus, type DonationEvent } from '@/lib/types';
+import { DONATION_STATUSES, statusMeta, type DonationEvent } from '@/lib/types';
 import { formatDate, formatTime, cn } from '@/lib/utils';
 
 const ROLE_LABEL: Record<string, string> = {
@@ -15,7 +15,7 @@ export function Timeline({
   events,
   flagged,
 }: {
-  status: AnyStatus;
+  status: string;
   events: DonationEvent[];
   flagged?: boolean;
 }) {
@@ -24,13 +24,12 @@ export function Timeline({
 
   return (
     <ol className="relative">
-      {DONATION_STATUSES.filter(s => s !== 'PENDING_PAYMENT').map((step, idx, arr) => {
-        const i = DONATION_STATUSES.indexOf(step);
+      {DONATION_STATUSES.map((step, i) => {
         const event = eventByStatus.get(step);
         const done = i <= currentIdx && currentIdx >= 0;
         const active = i === currentIdx;
         const isLast = i === DONATION_STATUSES.length - 1;
-        const meta = STATUS_META[step];
+        const meta = statusMeta(step);
         const isFlaggedStep = isLast && flagged && done;
 
         return (

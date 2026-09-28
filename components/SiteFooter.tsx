@@ -10,6 +10,7 @@ const LINKS = [
   { href: '/#how', label: 'How it works' },
   { href: '/#transparency', label: 'Transparency promise' },
   { href: '/track', label: 'Track a donation' },
+  { href: '/join', label: 'Partner with us' },
 ];
 
 export function SiteFooter() {

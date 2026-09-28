@@ -8,12 +8,19 @@ import { useAuth, homeForRole } from '@/lib/auth-context';
 import { ApiError } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
+/**
+ * Convenience for the seeded demo database. Set
+ * NEXT_PUBLIC_SHOW_DEMO_LOGINS=true to show these; they stay hidden otherwise,
+ * so a production build never advertises a shared password.
+ */
 const DEMO = [
   { label: 'Admin', email: 'admin@daansetu.in' },
-  { label: 'Restaurant', email: 'kitchen@saffronandstone.in' },
-  { label: 'NGO', email: 'parbhatanawakening@gmail.com' },
+  { label: 'Dil Dosa', email: 'kitchen@dildosa.in' },
+  { label: 'Parbhat', email: 'parbhat@daansetu.in' },
+  { label: 'Donor', email: 'donor@daansetu.in' },
 ];
 const DEMO_PASSWORD = 'DaanSetu@2026';
+const SHOW_DEMO = process.env.NEXT_PUBLIC_SHOW_DEMO_LOGINS === 'true';
 
 export function LoginForm() {
   const router = useRouter();
@@ -91,7 +98,7 @@ export function LoginForm() {
         </Link>
       </p>
 
-      {/* MVP convenience — remove before going to production. */}
+      {SHOW_DEMO && (
       <div className="mt-8 rounded-xl border border-line bg-paper-deep p-4">
         <p className="text-[10.5px] uppercase tracking-[0.13em] text-ink-mute">Demo accounts</p>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -107,9 +114,10 @@ export function LoginForm() {
           ))}
         </div>
         <p className="mt-3 text-[11.5px] text-ink-mute">
-          Password for all three: <span className="text-ink">{DEMO_PASSWORD}</span>
+          Password for all of them: <span className="text-ink">{DEMO_PASSWORD}</span>
         </p>
       </div>
+      )}
     </>
   );
 }

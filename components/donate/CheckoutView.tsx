@@ -78,7 +78,7 @@ export function CheckoutView({ restaurant, items, ngo }: Props) {
     if (!/^(\+91)?[6-9]\d{9}$/.test(form.phone.replace(/[\s-]/g, ''))) {
       next.phone = form.phone
         ? 'Enter a valid 10-digit mobile number'
-        : 'We need your number to send your tracking link';
+        : 'We need a number to put on the record with this donation';
     }
     setErrors(next);
 
@@ -118,20 +118,65 @@ export function CheckoutView({ restaurant, items, ngo }: Props) {
       const donationId = created.donation.donationId;
       const order = await post<OrderResponse>('/payments/order', { donationId });
 
-      // Bypass Razorpay entirely for now per user request
+      // With no Razorpay keys configured the API runs a mock gateway: the same
+      // create-order → verify → record path executes, so the flow is testable
+      // end to end locally. Real keys switch this to Razorpay automatically.
+      if (order.mode === 'mock') {
+        setStage('paying');
+        await new Promise((r) => setTimeout(r, 900));
+        setStage('verifying');
+        await post('/payments/verify', {
+          donationId,
+          razorpayOrderId: order.orderId,
+          razorpayPaymentId: `pay_mock_${Date.now()}`,
+          razorpaySignature: 'mock_signature',
+        });
+        finish(donationId);
+        return;
+      }
+
+      const ready = await loadRazorpay();
+      if (!ready || !window.Razorpay) {
+        throw new Error('Could not reach the payment gateway. Check your connection.');
+      }
+
       setStage('paying');
-      await new Promise((r) => setTimeout(r, 900));
-      setStage('verifying');
-      await post('/payments/verify', {
-        donationId,
-        razorpayOrderId: order.orderId || `order_mock_${Date.now()}`,
-        razorpayPaymentId: `pay_mock_${Date.now()}`,
-        razorpaySignature: 'mock_signature',
+      const rzp = new window.Razorpay({
+        key: order.keyId!,
+        amount: order.amountPaise,
+        currency: order.currency,
+        name: 'DaanSetu',
+        description: `${totals.portions} ${totals.portions === 1 ? 'portion' : 'portions'} from ${restaurant.name}`,
+        order_id: order.orderId,
+        prefill: { name: form.name, contact: form.phone },
+        theme: { color: '#0d4b38' },
+        handler: async (response) => {
+          // The gateway's word is not enough: the API verifies the signature
+          // before a donation is ever marked paid.
+          try {
+            setStage('verifying');
+            await post('/payments/verify', {
+              donationId,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            });
+            finish(donationId);
+          } catch (err) {
+            push(err instanceof ApiError ? err.message : 'Payment verification failed.', 'error');
+            setSubmitting(false);
+            setStage('idle');
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            push('Payment cancelled. Your selection is still here.', 'info');
+            setSubmitting(false);
+            setStage('idle');
+          },
+        },
       });
-      finish(donationId);
-      return;
-
-
+      rzp.open();
     } catch (err) {
       push(err instanceof Error ? err.message : 'Something went wrong.', 'error');
       setSubmitting(false);
@@ -208,8 +253,8 @@ export function CheckoutView({ restaurant, items, ngo }: Props) {
           <div className="max-w-lg">
             <h1 className="display-md mt-6">Almost there.</h1>
             <p className="mt-3 text-[14.5px] leading-relaxed text-ink-soft">
-              Please provide your number so we can send your donation ID and tracking link, to
-              ensure full transparency.
+              Your number stays on the record with this donation, so you can look it up later.
+              The next screen gives you a tracking link to keep.
             </p>
 
             {/* The one thing we actually need — kept out of the optional card. */}

@@ -15,10 +15,31 @@ export class ApiError extends Error {
 
 interface Options extends Omit<RequestInit, 'body'> {
   body?: unknown;
+  /** Internal: stops a refreshed request from trying to refresh again. */
+  retried?: boolean;
+}
+
+/** Endpoints that must never trigger a session refresh, or it would loop. */
+const AUTH_PATHS = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout'];
+
+let refreshing: Promise<boolean> | null = null;
+
+/**
+ * Trades the long-lived refresh cookie for a new session. Shared between
+ * concurrent callers so a page with several requests refreshes once.
+ */
+async function refreshSession(): Promise<boolean> {
+  refreshing ??= fetch(`${BASE}/auth/refresh`, { method: 'POST', credentials: 'include' })
+    .then((res) => res.ok)
+    .catch(() => false)
+    .finally(() => {
+      refreshing = null;
+    });
+  return refreshing;
 }
 
 export async function api<T>(path: string, options: Options = {}): Promise<T> {
-  const { body, headers, ...rest } = options;
+  const { body, headers, retried, ...rest } = options;
 
   const res = await fetch(`${BASE}${path}`, {
     ...rest,
@@ -30,7 +51,16 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
 
-  let payload: { success: boolean; data?: T; error?: { code: string; message: string; details?: ApiError['details'] } };
+  // An expired access token is recoverable: refresh once, then replay.
+  if (res.status === 401 && !retried && !AUTH_PATHS.some((p) => path.startsWith(p))) {
+    if (await refreshSession()) return api<T>(path, { ...options, retried: true });
+  }
+
+  let payload: {
+    success: boolean;
+    data?: T;
+    error?: { code: string; message: string; details?: ApiError['details'] };
+  };
   try {
     payload = await res.json();
   } catch {

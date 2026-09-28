@@ -19,7 +19,7 @@ const STEPS = [
   {
     n: '04',
     title: 'Follow it out the door',
-    body: 'Three checkpoints, each stamped by whoever is responsible. The last one belongs to the NGO, and only they can set it.',
+    body: 'Four checkpoints, each stamped by whoever is responsible. The last one belongs to the NGO, and only they can set it.',
   },
 ];
 
@@ -32,7 +32,7 @@ export function HowItWorks() {
           <h2 className="display-lg mt-5 text-balance-lux">
             Four steps for you.
             <br />
-            <em className="font-normal italic text-ink-mute">Three checkpoints for the food.</em>
+            <em className="font-normal italic text-ink-mute">Four checkpoints for the food.</em>
           </h2>
         </Reveal>
 
