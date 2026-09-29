@@ -22,6 +22,13 @@ const DEMO = [
 const DEMO_PASSWORD = 'DaanSetu@2026';
 const SHOW_DEMO = process.env.NEXT_PUBLIC_SHOW_DEMO_LOGINS === 'true';
 
+/** A redirect target is only honoured if it is a path on this site. */
+function safeNext(value: string | null): string | null {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return null;
+  if (value === '/login' || value === '/register') return null;
+  return value;
+}
+
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
@@ -36,8 +43,7 @@ export function LoginForm() {
     setError('');
     try {
       const user = await signIn(form.email, form.password);
-      router.push(params.get('next') ?? homeForRole(user.role));
-      router.refresh();
+      router.replace(safeNext(params.get('next')) ?? homeForRole(user.role));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not sign in. Try again.');
       setLoading(false);

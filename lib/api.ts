@@ -1,5 +1,16 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5001/api';
 
+/**
+ * BASE may be a path like "/api" when the API is proxied through this site (see
+ * next.config.ts). The browser can use that as-is; server-side rendering has no
+ * origin to resolve it against, so it needs the API's real address.
+ */
+function url(path: string): string {
+  if (!BASE.startsWith('/') || typeof window !== 'undefined') return `${BASE}${path}`;
+  const origin = process.env.API_ORIGIN?.replace(/\/$/, '') ?? '';
+  return `${origin}${BASE}${path}`;
+}
+
 export class ApiError extends Error {
   code: string;
   status: number;
@@ -29,7 +40,7 @@ let refreshing: Promise<boolean> | null = null;
  * concurrent callers so a page with several requests refreshes once.
  */
 async function refreshSession(): Promise<boolean> {
-  refreshing ??= fetch(`${BASE}/auth/refresh`, { method: 'POST', credentials: 'include' })
+  refreshing ??= fetch(url('/auth/refresh'), { method: 'POST', credentials: 'include' })
     .then((res) => res.ok)
     .catch(() => false)
     .finally(() => {
@@ -41,7 +52,7 @@ async function refreshSession(): Promise<boolean> {
 export async function api<T>(path: string, options: Options = {}): Promise<T> {
   const { body, headers, retried, ...rest } = options;
 
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(url(path), {
     ...rest,
     credentials: 'include',
     headers: {
@@ -89,7 +100,7 @@ export const del = <T,>(path: string, init?: Options) => api<T>(path, { ...init,
 /** Server-side fetch for RSC — no cookies, always fresh. */
 export async function serverGet<T>(path: string): Promise<T | null> {
   try {
-    const res = await fetch(`${BASE}${path}`, { cache: 'no-store' });
+    const res = await fetch(url(path), { cache: 'no-store' });
     const payload = await res.json();
     if (!res.ok || !payload.success) return null;
     return payload.data as T;

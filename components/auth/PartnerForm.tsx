@@ -84,9 +84,10 @@ export function PartnerForm({ kind }: { kind: Kind }) {
         });
       }
 
+      // The application set the session cookie; load it before navigating so
+      // the dashboard does not briefly look signed out.
       await refresh();
-      router.push(kind === 'restaurant' ? '/dashboard/restaurant' : '/dashboard/ngo');
-      router.refresh();
+      router.replace(kind === 'restaurant' ? '/dashboard/restaurant' : '/dashboard/ngo');
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : 'Could not send your application. Please try again.'

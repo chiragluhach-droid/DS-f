@@ -25,8 +25,7 @@ export function RegisterForm() {
         password: form.password,
         phone: form.phone || undefined,
       });
-      router.push(homeForRole(user.role));
-      router.refresh();
+      router.replace(homeForRole(user.role));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not create your account.');
       setLoading(false);

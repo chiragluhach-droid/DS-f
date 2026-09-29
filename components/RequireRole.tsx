@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth, homeForRole } from '@/lib/auth-context';
 import type { Role } from '@/lib/types';
 
 export function RequireRole({
@@ -20,7 +20,9 @@ export function RequireRole({
   useEffect(() => {
     if (loading) return;
     if (!user) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
-    else if (!roles.includes(user.role)) router.replace('/');
+    // Signed in, wrong workspace: send them to their own rather than dropping
+    // them on the landing page with no explanation.
+    else if (!roles.includes(user.role)) router.replace(homeForRole(user.role));
   }, [user, loading, roles, router, pathname]);
 
   if (loading || !user || !roles.includes(user.role)) {
