@@ -16,6 +16,7 @@ export type DonationStatus = (typeof DONATION_STATUSES)[number];
 export type AnyStatus =
   | DonationStatus
   | 'PENDING_PAYMENT'
+  | 'UNDER_REVIEW'
   | 'FAILED'
   | 'CANCELLED'
   | 'REFUNDED';
@@ -47,10 +48,16 @@ export const STATUS_META: Record<AnyStatus, StatusMeta> = {
     short: 'On the way',
     blurb: 'The kitchen cooked the batch and sent it to the NGO.',
   },
+  UNDER_REVIEW: {
+    label: 'Receipt recorded with a shortfall — under review',
+    short: 'Under review',
+    blurb:
+      'The NGO counted fewer portions than the kitchen sent. DaanSetu is reconciling the difference, and this page will say what was decided.',
+  },
   NGO_CONFIRMED: {
     label: 'Confirmed by the NGO',
     short: 'Confirmed',
-    blurb: 'Counted on arrival by the NGO, and served.',
+    blurb: 'Counted on arrival by the NGO, and confirmed as received.',
   },
   FAILED: { label: 'Payment failed', short: 'Failed', blurb: 'This payment did not go through.' },
   CANCELLED: { label: 'Cancelled', short: 'Cancelled', blurb: 'This donation was cancelled.' },
@@ -299,9 +306,23 @@ export interface BatchSummary {
   readyToCook: number;
   inTransit: number;
   flagged: number;
+  /** Funded, dispatched and received are three different counts — never mixed. */
+  portionsFunded: number;
   portionsAwaitingDispatch: number;
   portionsInTransit: number;
-  byStatus: Record<BatchStatus, { batches: number; portions: number }>;
+  portionsDispatched: number;
+  portionsReceived: number;
+  byStatus: Record<
+    BatchStatus,
+    { batches: number; portions: number; dispatched: number; received: number }
+  >;
+}
+
+/** A batch's operational detail: who moved it, and which donations it carries. */
+export interface BatchDetail {
+  batch: Batch;
+  events: BatchEvent[];
+  donations: { donationId: string; status: AnyStatus; portions: number; createdAt: string }[];
 }
 
 export interface BatchEvent {

@@ -115,7 +115,7 @@ export default function RestaurantBatchesPage() {
           {collecting.length > 0 && (
             <Section
               title="Still collecting"
-              blurb="You can send a batch early if you would rather not wait for the target."
+              blurb="Guests are funding these. Each one is sent once it reaches its target."
             >
               {collecting.map((batch) => (
                 <BatchRow key={batch._id} batch={batch} onDispatch={setDispatching} />
@@ -167,7 +167,10 @@ function Section({
 
 function BatchRow({ batch, onDispatch }: { batch: Batch; onDispatch: (b: Batch) => void }) {
   const ngo = batch.ngo as Ngo | undefined;
-  const canDispatch = batch.status === 'IN_PROGRESS' || batch.status === 'READY_FOR_DELIVERY';
+  // Guests are told a batch goes out once it is fully funded, so only a batch
+  // that reached its target can be sent.
+  const canDispatch = batch.status === 'READY_FOR_DELIVERY';
+  const collecting = batch.status === 'IN_PROGRESS';
   const percent = Math.min(
     100,
     Math.round((batch.collectedQuantity / Math.max(1, batch.targetQuantity)) * 100)
@@ -199,7 +202,7 @@ function BatchRow({ batch, onDispatch }: { batch: Batch; onDispatch: (b: Batch) 
             {pluralize(batch.donationCount, 'donation')} · opened {formatDate(batch.createdAt)}
           </p>
 
-          {canDispatch && (
+          {(canDispatch || collecting) && (
             <div className="mt-4 max-w-sm">
               <div className="mb-1.5 flex justify-between text-[11.5px] text-ink-mute">
                 <span>{batch.collectedQuantity} funded</span>
@@ -255,6 +258,12 @@ function BatchRow({ batch, onDispatch }: { batch: Batch; onDispatch: (b: Batch) 
               <Truck size={14} strokeWidth={1.8} />
               Send to {ngo?.name?.split(' ')[0] ?? 'NGO'}
             </button>
+          ) : collecting ? (
+            <p className="max-w-[11rem] text-right text-[12.5px] text-ink-mute">
+              {batch.targetQuantity - batch.collectedQuantity} more{' '}
+              {pluralize(batch.targetQuantity - batch.collectedQuantity, 'portion')} to fund
+              before this can be sent.
+            </p>
           ) : (
             <p className="max-w-[10rem] text-right text-[12.5px] text-ink-mute">
               {BATCH_META[batch.status]?.blurb}

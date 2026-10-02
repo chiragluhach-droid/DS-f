@@ -121,9 +121,9 @@ export function Hero({ foodValuePaise, portions }: { foodValuePaise: number; por
         <div className="mt-24 border-t border-line pt-7 md:mt-32">
           <p className="text-center text-[13px] text-ink-mute">
             <span className="numeral text-[15px] text-ink">{formatInr(foodValuePaise)}</span> of food
-            sent out so far across{' '}
-            <span className="numeral text-[15px] text-ink">{portions}</span> portions · every one
-            confirmed by the NGO that served it
+            funded to date across{' '}
+            <span className="numeral text-[15px] text-ink">{portions}</span> portions · excludes
+            refunds · each batch is counted by the NGO on arrival
           </p>
         </div>
       </div>

@@ -96,8 +96,8 @@ export default function NgoOverview() {
         />
         <StatCard
           label="Portions received"
-          value={formatNumber(ngo?.stats.portionsReceived ?? 0)}
-          sub="All time"
+          value={formatNumber(summary.portionsReceived)}
+          sub={`of ${formatNumber(summary.portionsDispatched)} dispatched to you`}
           tone="emerald"
         />
       </div>
@@ -171,18 +171,23 @@ export default function NgoOverview() {
   );
 }
 
+const EMPTY_BATCH_COUNTS = { batches: 0, portions: 0, dispatched: 0, received: 0 };
+
 const EMPTY_SUMMARY: BatchSummary = {
   collecting: 0,
   readyToCook: 0,
   inTransit: 0,
   flagged: 0,
+  portionsFunded: 0,
   portionsAwaitingDispatch: 0,
   portionsInTransit: 0,
+  portionsDispatched: 0,
+  portionsReceived: 0,
   byStatus: {
-    IN_PROGRESS: { batches: 0, portions: 0 },
-    READY_FOR_DELIVERY: { batches: 0, portions: 0 },
-    DISPATCHED: { batches: 0, portions: 0 },
-    RECONCILIATION_REQUIRED: { batches: 0, portions: 0 },
-    COMPLETED: { batches: 0, portions: 0 },
+    IN_PROGRESS: { ...EMPTY_BATCH_COUNTS },
+    READY_FOR_DELIVERY: { ...EMPTY_BATCH_COUNTS },
+    DISPATCHED: { ...EMPTY_BATCH_COUNTS },
+    RECONCILIATION_REQUIRED: { ...EMPTY_BATCH_COUNTS },
+    COMPLETED: { ...EMPTY_BATCH_COUNTS },
   },
 };

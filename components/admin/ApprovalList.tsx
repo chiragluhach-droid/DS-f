@@ -3,7 +3,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2, Check, X, Pause, ExternalLink, MapPin, Inbox } from 'lucide-react';
+import {
+  Loader2,
+  Check,
+  X,
+  Pause,
+  ExternalLink,
+  MapPin,
+  Inbox,
+  ChevronDown,
+  UtensilsCrossed,
+} from 'lucide-react';
 import { get, patch, ApiError } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { PageHeading, EmptyState } from '@/components/dashboard/DashboardShell';
@@ -65,6 +75,7 @@ export function ApprovalList({
   const [items, setItems] = useState<ApprovalEntity[] | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [menuFor, setMenuFor] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setItems(null);
@@ -195,6 +206,23 @@ export function ApprovalList({
                 )}
               </div>
 
+              {kind === 'restaurant' && entity.approvalStatus === 'approved' && (
+                <>
+                  <button
+                    onClick={() => setMenuFor(menuFor === entity._id ? null : entity._id)}
+                    className="mt-4 flex items-center gap-1.5 text-[12.5px] text-ink-mute transition-colors hover:text-emerald"
+                  >
+                    <UtensilsCrossed size={13} strokeWidth={1.7} />
+                    {menuFor === entity._id ? 'Hide pilot menu' : 'Pilot menu'}
+                    <ChevronDown
+                      size={13}
+                      className={cn('transition-transform', menuFor === entity._id && 'rotate-180')}
+                    />
+                  </button>
+                  {menuFor === entity._id && <PilotMenu restaurantId={entity._id} />}
+                </>
+              )}
+
               <div className="mt-5 flex flex-wrap gap-2.5 border-t border-line-soft pt-4">
                 {entity.approvalStatus !== 'approved' && (
                   <button
@@ -236,5 +264,103 @@ export function ApprovalList({
         </ul>
       )}
     </>
+  );
+}
+
+interface PilotItem {
+  _id: string;
+  name: string;
+  category: string;
+  mrpPaise: number;
+  batchTarget: number;
+  isAvailable: boolean;
+  activeForDonation: boolean;
+}
+
+/**
+ * Which of a kitchen's dishes are approved for the pilot. The kitchen decides
+ * what it can cook today; this decides what a guest is allowed to fund, so the
+ * pilot menu stays small and deliberate rather than being whatever was typed in.
+ */
+function PilotMenu({ restaurantId }: { restaurantId: string }) {
+  const { push } = useToast();
+  const [items, setItems] = useState<PilotItem[] | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const data = await get<{ items: PilotItem[] }>(`/admin/restaurants/${restaurantId}/menu`);
+      setItems(data.items);
+    } catch (err) {
+      push(err instanceof ApiError ? err.message : 'Could not load this menu.', 'error');
+      setItems([]);
+    }
+  }, [restaurantId, push]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const toggle = async (item: PilotItem) => {
+    setBusy(item._id);
+    try {
+      await patch(`/admin/menu-items/${item._id}/pilot`, {
+        activeForDonation: !item.activeForDonation,
+      });
+      push(
+        item.activeForDonation
+          ? `${item.name} removed from the pilot menu.`
+          : `${item.name} added to the pilot menu.`,
+        'success'
+      );
+      await load();
+    } catch (err) {
+      push(err instanceof ApiError ? err.message : 'Could not update that dish.', 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  if (!items) {
+    return (
+      <div className="mt-3 flex justify-center py-4">
+        <Loader2 className="size-4 animate-spin text-ink-mute" />
+      </div>
+    );
+  }
+
+  const approved = items.filter((i) => i.activeForDonation).length;
+
+  return (
+    <div className="mt-3 rounded-[14px] border border-line bg-paper p-4">
+      <p className="text-[12px] text-ink-mute">
+        {approved} of {items.length} dishes can be funded by guests.
+      </p>
+      <ul className="mt-3 divide-y divide-line-soft">
+        {items.map((item) => (
+          <li key={item._id} className="flex items-center gap-3 py-2.5">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] text-ink">{item.name}</p>
+              <p className="mt-0.5 text-[11.5px] text-ink-mute">
+                {item.category} · {formatInr(item.mrpPaise)} · batch of {item.batchTarget}
+                {!item.isAvailable && ' · hidden by the kitchen'}
+              </p>
+            </div>
+            <button
+              onClick={() => toggle(item)}
+              disabled={busy === item._id}
+              className={cn(
+                'shrink-0 rounded-full border px-3 py-1.5 text-[11.5px] transition-colors',
+                item.activeForDonation
+                  ? 'border-emerald/25 bg-emerald-wash text-emerald'
+                  : 'border-line bg-surface text-ink-mute'
+              )}
+            >
+              {busy === item._id ? '…' : item.activeForDonation ? 'In the pilot' : 'Not in pilot'}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

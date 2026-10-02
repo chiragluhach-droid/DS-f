@@ -48,13 +48,21 @@ export function TrackView({
 
   const restaurant = donation.restaurant as Restaurant;
   const ngo = donation.ngo as Ngo | undefined;
+  const underReview = donation.status === "UNDER_REVIEW";
   const complete = donation.status === "NGO_CONFIRMED";
   // A shortfall belongs to the batch the food travelled in, and stays visible
   // until an admin records what was done about it.
   const shortfalls = batches.filter((b) => b.shortfall);
-  const flagged = shortfalls.some((b) => !b.resolutionNote);
-  const portionsReceived = batches.reduce((sum, b) => sum + (b.receivedQuantity ?? 0), 0);
+  const flagged = underReview || shortfalls.some((b) => !b.resolutionNote);
   const allCounted = batches.length > 0 && batches.every((b) => b.receivedAt);
+
+  /**
+   * Two different scopes, never mixed: what this donor funded, and what moved in
+   * the batches their dishes travelled in. A batch carries other people's
+   * portions too, so its receipt count says nothing about one donor's share.
+   */
+  const batchDispatched = batches.reduce((sum, b) => sum + (b.dispatchedQuantity ?? 0), 0);
+  const batchReceived = batches.reduce((sum, b) => sum + (b.receivedQuantity ?? 0), 0);
 
   useEffect(() => {
     if (!celebrate) return;
@@ -116,11 +124,21 @@ export function TrackView({
                     {formatInr(donation.totalFoodValuePaise)} of food.
                   </em>
                 </>
+              ) : underReview ? (
+                <>
+                  {donation.totalPortions}{" "}
+                  {donation.totalPortions === 1 ? "portion" : "portions"} funded,{" "}
+                  <em className="font-normal italic text-amber">
+                    receipt under review.
+                  </em>
+                </>
               ) : complete ? (
                 <>
                   {donation.totalPortions}{" "}
                   {donation.totalPortions === 1 ? "portion" : "portions"}{" "}
-                  <em className="font-normal italic text-emerald">served.</em>
+                  <em className="font-normal italic text-emerald">
+                    received by the NGO.
+                  </em>
                 </>
               ) : (
                 <>
@@ -202,14 +220,19 @@ export function TrackView({
                       : "border-emerald/20 bg-emerald-wash",
                   )}
                 >
-                  <p className="eyebrow">Final count, as recorded by the NGO</p>
-                  <div className="mt-4 flex flex-wrap items-baseline gap-x-8 gap-y-3">
+                  <p className="eyebrow">What the NGO counted on arrival</p>
+                  <div className="mt-4 flex flex-wrap items-baseline gap-x-10 gap-y-4">
                     <div>
-                      <p className="numeral text-[2.2rem] leading-none text-emerald">
-                        {portionsReceived}
+                      <p
+                        className={cn(
+                          "numeral text-[2.2rem] leading-none",
+                          flagged ? "text-amber" : "text-emerald",
+                        )}
+                      >
+                        {batchReceived} of {batchDispatched}
                       </p>
                       <p className="mt-1.5 text-[11.5px] uppercase tracking-[0.1em] text-ink-mute">
-                        Portions received
+                        Batch receipt · portions received
                       </p>
                     </div>
                     <div>
@@ -217,10 +240,15 @@ export function TrackView({
                         {donation.totalPortions}
                       </p>
                       <p className="mt-1.5 text-[11.5px] uppercase tracking-[0.1em] text-ink-mute">
-                        Portions sent
+                        Your contribution · portions funded
                       </p>
                     </div>
                   </div>
+                  <p className="mt-4 border-t border-line-soft pt-3.5 text-[12.5px] leading-relaxed text-ink-soft">
+                    These are different counts. The batch total covers every
+                    donor who funded the same dish; your contribution is the part
+                    you paid for. A shortfall is not allocated to any one donor.
+                  </p>
                 </div>
               )}
             </div>
@@ -310,7 +338,9 @@ export function TrackView({
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             <div className="card-lux overflow-hidden">
               <div className="border-b border-line bg-paper px-5 py-4">
-                <p className="eyebrow">What was sent</p>
+                <p className="eyebrow">
+                  {batchDispatched > 0 ? 'What was sent' : 'Funded items'}
+                </p>
               </div>
               <ul className="divide-y divide-line-soft px-5">
                 {donation.items.map((item) => (
@@ -393,7 +423,7 @@ export function TrackView({
               <div className="card-lux p-5">
                 <p className="eyebrow flex items-center gap-2">
                   <HeartHandshake size={12} strokeWidth={1.7} />
-                  Received by
+                  {allCounted ? 'Received by' : 'Intended NGO'}
                 </p>
                 <div className="mt-4 flex items-center gap-3.5">
                   {ngo.logoImage && (

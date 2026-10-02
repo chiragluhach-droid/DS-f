@@ -5,7 +5,6 @@ import { RestaurantView } from '@/components/donate/RestaurantView';
 import type { MenuItem, Restaurant, Ngo } from '@/lib/types';
 
 interface RecentDonation {
-  donationId: string;
   totalPortions: number;
   totalFoodValuePaise: number;
   createdAt: string;

@@ -36,6 +36,9 @@ export function CheckoutView({ restaurant, items, ngo }: Props) {
 
   const [lines, setLines] = useState<CartLine[] | null>(null);
   const [form, setForm] = useState({ name: '', phone: '', message: '' });
+  // Unticked by default: giving a name is not the same as agreeing to be named
+  // on a page anyone can open.
+  const [consent, setConsent] = useState({ publicName: false, publicMessage: false });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [nudge, setNudge] = useState(false);
   const phoneRef = useRef<HTMLInputElement>(null);
@@ -112,6 +115,8 @@ export function CheckoutView({ restaurant, items, ngo }: Props) {
           name: form.name.trim(),
           phone: form.phone.trim(),
           message: form.message.trim(),
+          consentPublicName: consent.publicName && form.name.trim().length > 0,
+          consentPublicMessage: consent.publicMessage && form.message.trim().length > 0,
         },
       });
 
@@ -301,7 +306,7 @@ export function CheckoutView({ restaurant, items, ngo }: Props) {
               <div className="card-lux p-6 md:p-8">
                 <h2 className="display-sm">Anything else?</h2>
                 <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">
-                  Both optional. Leave the name blank to give anonymously.
+                  Both optional, and both stay private unless you say otherwise.
                 </p>
 
                 <div className="mt-6 space-y-5">
@@ -333,6 +338,59 @@ export function CheckoutView({ restaurant, items, ngo }: Props) {
                       placeholder="For Amma, on her 70th birthday…"
                     />
                   </div>
+
+                <div className="mt-6 border-t border-line-soft pt-5">
+                  <p className="text-[12px] uppercase tracking-[0.11em] text-ink-mute">
+                    Showing this in public
+                  </p>
+                  <p className="mt-2 text-[12.5px] leading-relaxed text-ink-soft">
+                    Your donation is always tracked privately by its ID. These
+                    only control what appears on {restaurant.name}&rsquo;s public
+                    page and your tracking link.
+                  </p>
+
+                  <label
+                    className={cn(
+                      'mt-4 flex cursor-pointer items-start gap-3 text-[13px] leading-relaxed',
+                      !form.name.trim() && 'cursor-not-allowed opacity-50'
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 size-4 shrink-0 accent-emerald"
+                      checked={consent.publicName && Boolean(form.name.trim())}
+                      disabled={!form.name.trim()}
+                      onChange={(e) => setConsent({ ...consent, publicName: e.target.checked })}
+                    />
+                    <span className="text-ink-soft">
+                      Show my name publicly.{' '}
+                      <span className="text-ink-mute">
+                        Otherwise this donation appears as Anonymous.
+                      </span>
+                    </span>
+                  </label>
+
+                  <label
+                    className={cn(
+                      'mt-3 flex cursor-pointer items-start gap-3 text-[13px] leading-relaxed',
+                      !form.message.trim() && 'cursor-not-allowed opacity-50'
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 size-4 shrink-0 accent-emerald"
+                      checked={consent.publicMessage && Boolean(form.message.trim())}
+                      disabled={!form.message.trim()}
+                      onChange={(e) => setConsent({ ...consent, publicMessage: e.target.checked })}
+                    />
+                    <span className="text-ink-soft">
+                      Show my note publicly.{' '}
+                      <span className="text-ink-mute">
+                        The kitchen and the NGO can always read it.
+                      </span>
+                    </span>
+                  </label>
+                </div>
                 </div>
               </div>
             </div>

@@ -5,18 +5,31 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const formatInr = (paise: number, opts?: { decimals?: boolean }) =>
-  new Intl.NumberFormat('en-IN', {
+/**
+ * Money is held in paise, so an exact half-rupee split must be shown to the
+ * paisa. Rounding each side to whole rupees made a ₹95 dish read as ₹48 paid by
+ * the guest plus ₹48 matched by the kitchen — ₹96, which never existed.
+ * Whole-rupee amounts still print without decimals.
+ */
+export const formatInr = (paise: number, opts?: { decimals?: boolean }) => {
+  const exact = opts?.decimals ?? Math.round(paise) % 100 !== 0;
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
-    minimumFractionDigits: opts?.decimals ? 2 : 0,
-    maximumFractionDigits: opts?.decimals ? 2 : 0,
+    minimumFractionDigits: exact ? 2 : 0,
+    maximumFractionDigits: exact ? 2 : 0,
   }).format(paise / 100);
+};
 
 export const formatNumber = (n: number) => new Intl.NumberFormat('en-IN').format(n);
 
+/** The pilot runs in one city; every timestamp is shown in IST and labelled. */
+export const TIME_ZONE = 'Asia/Kolkata';
+export const TIME_ZONE_LABEL = 'IST';
+
 export const formatDate = (date: string | Date, withTime = false) =>
   new Intl.DateTimeFormat('en-IN', {
+    timeZone: TIME_ZONE,
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -24,9 +37,12 @@ export const formatDate = (date: string | Date, withTime = false) =>
   }).format(new Date(date));
 
 export const formatTime = (date: string | Date) =>
-  new Intl.DateTimeFormat('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }).format(
-    new Date(date)
-  );
+  new Intl.DateTimeFormat('en-IN', {
+    timeZone: TIME_ZONE,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(new Date(date));
 
 export function relativeTime(date: string | Date): string {
   const diff = Date.now() - new Date(date).getTime();

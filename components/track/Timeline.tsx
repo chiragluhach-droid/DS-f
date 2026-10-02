@@ -1,6 +1,6 @@
 import { Check, AlertTriangle } from 'lucide-react';
 import { DONATION_STATUSES, statusMeta, type DonationEvent } from '@/lib/types';
-import { formatDate, formatTime, cn } from '@/lib/utils';
+import { formatDate, formatTime, cn, TIME_ZONE_LABEL } from '@/lib/utils';
 
 const ROLE_LABEL: Record<string, string> = {
   system: 'DaanSetu',
@@ -19,18 +19,25 @@ export function Timeline({
   events: DonationEvent[];
   flagged?: boolean;
 }) {
-  const currentIdx = DONATION_STATUSES.indexOf(status as (typeof DONATION_STATUSES)[number]);
+  // UNDER_REVIEW is not a checkpoint of its own: it is the final checkpoint
+  // reached with an unresolved shortfall, so it renders there, flagged.
+  const disputed = status === 'UNDER_REVIEW';
+  const currentIdx = disputed
+    ? DONATION_STATUSES.length - 1
+    : DONATION_STATUSES.indexOf(status as (typeof DONATION_STATUSES)[number]);
   const eventByStatus = new Map(events.map((e) => [e.status, e]));
 
   return (
     <ol className="relative">
       {DONATION_STATUSES.map((step, i) => {
-        const event = eventByStatus.get(step);
+        const isLastStep = i === DONATION_STATUSES.length - 1;
+        const event =
+          eventByStatus.get(step) ?? (isLastStep && disputed ? eventByStatus.get('UNDER_REVIEW') : undefined);
         const done = i <= currentIdx && currentIdx >= 0;
         const active = i === currentIdx;
         const isLast = i === DONATION_STATUSES.length - 1;
         const meta = statusMeta(step);
-        const isFlaggedStep = isLast && flagged && done;
+        const isFlaggedStep = isLast && (flagged || disputed) && done;
 
         return (
           <li key={step} className="relative flex gap-5 pb-8 last:pb-0">
@@ -81,8 +88,11 @@ export function Timeline({
                   {event?.title ?? meta.label}
                 </h3>
                 {event && (
-                  <time className="shrink-0 text-[11.5px] tabular-nums text-ink-mute">
-                    {formatDate(event.createdAt)} · {formatTime(event.createdAt)}
+                  <time
+                    dateTime={event.createdAt}
+                    className="shrink-0 text-[11.5px] tabular-nums text-ink-mute"
+                  >
+                    {formatDate(event.createdAt)} · {formatTime(event.createdAt)} {TIME_ZONE_LABEL}
                   </time>
                 )}
               </div>

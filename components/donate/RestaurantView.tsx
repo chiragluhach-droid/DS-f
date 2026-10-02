@@ -15,7 +15,6 @@ import { formatInr, formatNumber, displayDomain, cn } from '@/lib/utils';
 import type { MenuItem, Restaurant, Ngo } from '@/lib/types';
 
 interface RecentDonation {
-  donationId: string;
   totalPortions: number;
   totalFoodValuePaise: number;
   createdAt: string;
@@ -68,14 +67,18 @@ export function RestaurantView({ restaurant, items, partners, activeBatches, rec
 
   const ngo = partners[0];
 
-  // A short donor list would leave a visible gap mid-loop, so repeat it until
-  // the strip is comfortably wider than any viewport before duplicating.
+  /**
+   * A short donor list would leave a visible gap mid-loop, so it is repeated
+   * until the strip is wider than any viewport. Only the first pass is real:
+   * every repeat is hidden from assistive technology and the heading states the
+   * true count, so a looping strip cannot read as more donations than happened.
+   */
+  const realDonations = useMemo(() => recentDonations.slice(0, 6), [recentDonations]);
   const marqueeCards = useMemo(() => {
-    const base = recentDonations.slice(0, 6);
-    if (base.length === 0) return [];
-    const copies = Math.ceil(8 / base.length);
-    return Array.from({ length: copies }, () => base).flat();
-  }, [recentDonations]);
+    if (realDonations.length === 0) return [];
+    const copies = Math.ceil(8 / realDonations.length);
+    return Array.from({ length: copies }, () => realDonations).flat();
+  }, [realDonations]);
 
   return (
     <>
@@ -378,6 +381,11 @@ export function RestaurantView({ restaurant, items, partners, activeBatches, rec
                   People who ate here, and paid it{' '}
                   <em className="font-normal italic text-emerald">forward.</em>
                 </h2>
+                <p className="mt-3 text-[13px] text-ink-soft">
+                  The {realDonations.length} most recent{' '}
+                  {realDonations.length === 1 ? 'donation' : 'donations'}, on a loop. Names and
+                  notes appear only where the donor asked for them to.
+                </p>
               </Reveal>
             </div>
 
@@ -389,8 +397,9 @@ export function RestaurantView({ restaurant, items, partners, activeBatches, rec
               <div className="marquee-track gap-4 px-4">
                 {[...marqueeCards, ...marqueeCards].map((d, i) => (
                   <figure
-                    key={`${d.donationId}-${i}`}
-                    aria-hidden={i >= marqueeCards.length}
+                    key={i}
+                    // Only the first pass is announced; the rest are decoration.
+                    aria-hidden={i >= realDonations.length}
                     className="card-lux flex w-[19rem] shrink-0 flex-col p-5 sm:w-[21rem]"
                   >
                     <Quote size={16} className="text-line" strokeWidth={1.6} />

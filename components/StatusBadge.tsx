@@ -6,6 +6,7 @@ const TONE: Record<string, string> = {
   PAYMENT_SUCCESS: 'bg-paper-deep text-ink-soft border-line',
   ASSIGNED_TO_BATCH: 'bg-brass-tint text-brass border-brass/25',
   DISPATCHED: 'bg-amber-tint text-amber border-amber/25',
+  UNDER_REVIEW: 'bg-amber-tint text-amber border-amber/30',
   NGO_CONFIRMED: 'bg-emerald text-paper border-emerald',
   FAILED: 'bg-danger-tint text-danger border-danger/25',
   CANCELLED: 'bg-danger-tint text-danger border-danger/25',

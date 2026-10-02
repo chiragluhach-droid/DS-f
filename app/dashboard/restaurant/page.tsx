@@ -130,9 +130,9 @@ export default function RestaurantOverview() {
           sub="Your commitment"
         />
         <StatCard
-          label="Food sent out"
+          label="Food funded"
           value={formatInr(analytics.totals.foodValuePaise)}
-          sub={`${formatNumber(analytics.totals.portions)} portions`}
+          sub={`${formatNumber(analytics.totals.portions)} portions paid for, all time`}
           tone="emerald"
         />
         <StatCard
@@ -140,6 +140,25 @@ export default function RestaurantOverview() {
           value={formatNumber(readyToCook)}
           sub={`${formatNumber(portionsToCook)} portions to send`}
           tone={readyToCook > 0 ? 'amber' : 'default'}
+        />
+      </div>
+
+      {/* Funded is not sent, and sent is not received — each gets its own figure. */}
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        <StatCard
+          label="Portions funded"
+          value={formatNumber(analytics.batches?.portionsFunded ?? 0)}
+          sub="Guests have paid for these"
+        />
+        <StatCard
+          label="Portions dispatched"
+          value={formatNumber(analytics.batches?.portionsDispatched ?? 0)}
+          sub="Cooked and sent to the NGO"
+        />
+        <StatCard
+          label="Portions received"
+          value={formatNumber(analytics.batches?.portionsReceived ?? 0)}
+          sub="Counted by the NGO on arrival"
         />
       </div>
 
