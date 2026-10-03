@@ -203,6 +203,11 @@ export interface MenuItem {
   isVeg: boolean;
   servingSize?: string;
   isAvailable: boolean;
+  /**
+   * Whether DaanSetu has approved this dish for the pilot. The kitchen controls
+   * isAvailable; a guest sees the dish only when both are true.
+   */
+  activeForDonation?: boolean;
   isSignature: boolean;
   sortOrder: number;
 }

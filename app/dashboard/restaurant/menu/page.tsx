@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
-import { Loader2, Plus, Pencil, Trash2, UtensilsCrossed, X } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, UtensilsCrossed, X, EyeOff, ExternalLink } from 'lucide-react';
 import { get, post, patch, del, ApiError } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { PageHeading, EmptyState } from '@/components/dashboard/DashboardShell';
@@ -45,6 +45,8 @@ export default function MenuPage() {
   const { push } = useToast();
   const [items, setItems] = useState<MenuItem[] | null>(null);
   const [error, setError] = useState<unknown>(null);
+  const [toggling, setToggling] = useState<string | null>(null);
+  const [slug, setSlug] = useState<string | null>(null);
   const [editing, setEditing] = useState<MenuItem | null>(null);
   const [draft, setDraft] = useState<Draft>(BLANK);
   const [open, setOpen] = useState(false);
@@ -65,6 +67,12 @@ export default function MenuPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    void get<{ restaurant: { slug: string } }>('/restaurants/me')
+      .then((d) => setSlug(d.restaurant.slug))
+      .catch(() => setSlug(null));
+  }, []);
 
   const openNew = () => {
     setEditing(null);
@@ -122,12 +130,35 @@ export default function MenuPage() {
     }
   };
 
+  /**
+   * Flip the switch straight away and send the change behind it. Waiting for the
+   * round trip plus a full list reload made a one-tap control feel broken, and
+   * this is the switch that decides whether guests can fund the dish at all.
+   * A failure puts it back and says so.
+   */
   const toggleAvailable = async (item: MenuItem) => {
+    const next = !item.isAvailable;
+    const apply = (value: boolean) =>
+      setItems((current) =>
+        current?.map((i) => (i._id === item._id ? { ...i, isAvailable: value } : i)) ?? current
+      );
+
+    setToggling(item._id);
+    apply(next);
+
     try {
-      await patch(`/menu/me/items/${item._id}`, { isAvailable: !item.isAvailable });
-      await load();
+      await patch(`/menu/me/items/${item._id}`, { isAvailable: next });
+      push(
+        next
+          ? `${item.name} is back on your donation page.`
+          : `${item.name} is hidden — guests can no longer fund it.`,
+        'success'
+      );
     } catch (err) {
+      apply(!next);
       push(err instanceof ApiError ? err.message : 'Could not update availability.', 'error');
+    } finally {
+      setToggling(null);
     }
   };
 
@@ -136,12 +167,25 @@ export default function MenuPage() {
       <PageHeading
         eyebrow="Donation menu"
         title="What guests can fund"
-        description="These are the dishes shown when someone scans your code. A guest pays half the menu price and you commit the other half."
+        description="These are the dishes shown when someone scans your code. A guest pays half the menu price and you commit the other half. Hiding a dish removes it from that page straight away."
         action={
-          <button onClick={openNew} className="btn btn-primary py-2.5 text-[13px]">
-            <Plus size={15} />
-            Add a dish
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            {slug && (
+              <a
+                href={`/restaurant/${slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-outline py-2.5 text-[13px]"
+              >
+                <ExternalLink size={14} strokeWidth={1.8} />
+                View donation page
+              </a>
+            )}
+            <button onClick={openNew} className="btn btn-primary py-2.5 text-[13px]">
+              <Plus size={15} />
+              Add a dish
+            </button>
+          </div>
         }
       />
 
@@ -189,6 +233,20 @@ export default function MenuPage() {
                       {item.category}
                       {item.isSignature && ' · Signature'}
                     </p>
+                    {/* A dish is public only when the kitchen shows it AND
+                        DaanSetu has approved it for the pilot. */}
+                    {item.activeForDonation === false ? (
+                      <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber/30 bg-amber-tint px-2.5 py-1 text-[10.5px] uppercase tracking-[0.09em] text-amber">
+                        Not in the pilot
+                      </p>
+                    ) : (
+                      !item.isAvailable && (
+                        <p className="mt-2 inline-flex items-center gap-1.5 text-[11.5px] text-ink-mute">
+                          <EyeOff size={11} strokeWidth={1.8} />
+                          Not on your donation page
+                        </p>
+                      )
+                    )}
                   </div>
                   <div className="flex shrink-0 gap-1">
                     <button
@@ -226,14 +284,34 @@ export default function MenuPage() {
                     </p>
                   </div>
                   <button
+                    type="button"
+                    role="switch"
+                    aria-checked={item.isAvailable}
+                    aria-label={`${item.name}: ${
+                      item.isAvailable ? 'shown on' : 'hidden from'
+                    } your donation page`}
+                    disabled={toggling === item._id}
                     onClick={() => toggleAvailable(item)}
                     className={cn(
-                      'rounded-full border px-3 py-1.5 text-[11.5px] transition-colors',
+                      'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11.5px]',
+                      'transition-all duration-150 active:scale-[0.94] disabled:cursor-wait',
+                      'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald',
                       item.isAvailable
-                        ? 'border-emerald/25 bg-emerald-wash text-emerald'
-                        : 'border-line bg-paper text-ink-mute'
+                        ? 'border-emerald/30 bg-emerald-wash text-emerald hover:border-emerald/60 hover:bg-emerald/10'
+                        : 'border-line bg-paper text-ink-mute hover:border-ink-faint hover:text-ink-soft'
                     )}
                   >
+                    {toggling === item._id ? (
+                      <Loader2 size={11} className="animate-spin" />
+                    ) : (
+                      <span
+                        aria-hidden
+                        className={cn(
+                          'size-1.5 rounded-full transition-colors duration-150',
+                          item.isAvailable ? 'bg-emerald' : 'bg-ink-faint'
+                        )}
+                      />
+                    )}
                     {item.isAvailable ? 'Available' : 'Hidden'}
                   </button>
                 </div>
